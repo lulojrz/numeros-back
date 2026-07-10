@@ -2,6 +2,7 @@ package com.example.back_numeros.Config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -25,7 +26,12 @@ public class SecurityConfig {
                 // 2. Desactivamos CSRF para poder hacer POST/PUT
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll() // Permite todo sin tokens ni contraseñas
+                        .requestMatchers(HttpMethod.OPTIONS,"/**").permitAll()
+                        .requestMatchers("/usuarios","/usuarios/editar/{id}","/usuarios/crear","/usuarios/borrar/{id}","/api/editar/{id}","/api/borrar/{id}","/api/agregar").hasRole("ANC")
+                        .requestMatchers("/usuarios","/usuarios/crear","/api/editar/{id}","/api/borrar/{id}","/api/agregar").hasRole("SM")
+                        .requestMatchers("/usuarios/login","/usuarios/cambiar-contrasena","api/numeros").permitAll()
+
+
                 );
         return http.build();
     }
