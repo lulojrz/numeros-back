@@ -26,12 +26,11 @@ public class SecurityConfig {
                 // 2. Desactivamos CSRF para poder hacer POST/PUT
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS,"/**").permitAll()
-                        .requestMatchers("/usuarios","/usuarios/editar/{id}","/usuarios/crear","/usuarios/borrar/{id}","/api/editar/{id}","/api/borrar/{id}","/api/agregar").hasRole("ANC")
-                        .requestMatchers("/usuarios","/usuarios/crear","/api/editar/{id}","/api/borrar/{id}","/api/agregar").hasRole("SM")
-                        .requestMatchers("/usuarios/login","/usuarios/cambiar-contrasena","api/numeros").permitAll()
-
-
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/usuarios/login", "/usuarios/cambiar-contrasena", "/api/numeros").permitAll()
+                        .requestMatchers("/usuarios/editar/{id}", "/usuarios/borrar/{id}").hasRole("ANC")
+                        .requestMatchers("/usuarios", "/usuarios/crear", "/api/editar/{id}", "/api/borrar/{id}", "/api/agregar").hasAnyRole("ANC", "SM")
+                        .anyRequest().authenticated()
                 );
         return http.build();
     }
