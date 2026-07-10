@@ -1,6 +1,7 @@
 package com.example.back_numeros.model;
 
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -19,13 +20,22 @@ public class Numero {
 
     private String direccion;
     private String territorio;
-    private String manzana;
+    private String edificio;
     private String numero;
 
 
     @Column(name = "ultima_fecha", nullable = false, updatable = false)
+
     private LocalDateTime ultimaFecha;
 
     private Boolean reservado;
+    @ManyToOne // Muchos números pueden haber sido modificados por un mismo Usuario
+    @JoinColumn(name = "ultUsuario") // El nombre exacto de la columna en MySQL
+    private Usuario ultUsuario; // Reemplazá 'Usuario' por el nombre de tu clase de usuarios
+    private Boolean tocar;
+
+    @ManyToOne
+    @JoinColumn(name = "reservadoA")
+    private Usuario reservadoA;
 
 }
