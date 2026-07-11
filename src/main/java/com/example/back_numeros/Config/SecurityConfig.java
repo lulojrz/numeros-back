@@ -26,12 +26,13 @@ public class SecurityConfig {
                 // 2. Desactivamos CSRF para poder hacer POST/PUT
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/usuarios/login", "/usuarios/cambiar-contrasena", "/api/numeros").permitAll()
-                        .requestMatchers("/usuarios/editar/{id}", "/usuarios/borrar/{id}").hasRole("ANC")
-                        .requestMatchers("/usuarios", "/usuarios/crear", "/api/editar/{id}", "/api/borrar/{id}", "/api/agregar").hasAnyRole("ANC", "SM")
-                        .anyRequest().authenticated()
-                );
+        // Deja el OPTIONS en la primera línea absoluta de tus reglas
+        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+        .requestMatchers("/usuarios/login", "/usuarios/cambiar-contrasena", "/api/numeros").permitAll()
+        .requestMatchers("/usuarios/editar/{id}", "/usuarios/borrar/{id}").hasRole("ANC")
+        .requestMatchers("/usuarios", "/usuarios/crear", "/api/editar/{id}", "/api/borrar/{id}", "/api/agregar").hasAnyRole("ANC", "SM")
+        .anyRequest().authenticated()
+);
         return http.build();
     }
 
@@ -45,7 +46,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // Le habilitamos la entrada exacta a tu puerto de React
-        configuration.setAllowedOrigins(List.of("https://colegiales.netlify.app")));
+        configuration.setAllowedOrigins(List.of("https://colegiales.netlify.app"));
 
         // Permitimos los métodos que vas a usar en tus contextos de React
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
