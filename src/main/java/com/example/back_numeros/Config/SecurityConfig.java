@@ -26,33 +26,21 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
             // 2. Desactivamos CSRF para poder hacer POST/PUT
             .csrf(csrf -> csrf.disable())
             
-            // 3. NUEVO: Gestión de sesiones para asegurar la regeneración en entornos cruzados
+            // 3. Gestión de sesiones
             .sessionManagement(session -> session
                     .sessionFixation(sessionFixation -> sessionFixation.newSession())
             )
             
             .authorizeHttpRequests(auth -> auth
-                    // Deja el OPTIONS en la primera línea absoluta de tus reglas
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                     .requestMatchers("/usuarios/login", "/usuarios/cambiar-contrasena", "/api/numeros").permitAll()
-                    .requestMatchers("/usuarios/editar/{id}", "/usuarios/borrar/{id}").hasRole("ANC")
-                    .requestMatchers("/usuarios", "/usuarios/crear", "/api/editar/{id}", "/api/borrar/{id}", "/api/agregar").hasAnyRole("ANC", "SM")
+                    .requestMatchers("/usuarios/editar/{id}", "/usuarios/borrar/{id}").hasAuthority("ANC")
+                    .requestMatchers("/usuarios", "/usuarios/crear", "/api/editar/{id}", "/api/borrar/{id}", "/api/agregar").hasAnyAuthority("ANC", "SM")
                     .anyRequest().authenticated()
             );
             
     return http.build();
 }
-
-// 4. NUEVO: Forzar SameSite=None y Secure en la cookie JSESSIONID para Chrome/Netlify
-@Bean
-public org.springframework.boot.web.servlet.server.CookieSameSiteSupplier cookieSameSiteSupplier() {
-    return org.springframework.boot.web.servlet.server.CookieSameSiteSupplier.ofNone().withSecure();
-}
-
-
-
-
-    
 
     @Bean
     public PasswordEncoder passwordEncoder() {
