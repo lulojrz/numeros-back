@@ -45,7 +45,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // Le habilitamos la entrada exacta a tu puerto de React
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        configuration.setAllowedOrigins(List.of("https://colegiales.netlify.app")));
 
         // Permitimos los métodos que vas a usar en tus contextos de React
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
