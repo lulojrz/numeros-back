@@ -17,24 +17,42 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+      @Bean
+public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    http
+            // 1. LE AVISAMOS A SPRING SECURITY QUE USE TU CONFIGURACIÓN DE CORS
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            
+            // 2. Desactivamos CSRF para poder hacer POST/PUT
+            .csrf(csrf -> csrf.disable())
+            
+            // 3. NUEVO: Gestión de sesiones para asegurar la regeneración en entornos cruzados
+            .sessionManagement(session -> session
+                    .sessionFixation(sessionFixation -> sessionFixation.newSession())
+            )
+            
+            .authorizeHttpRequests(auth -> auth
+                    // Deja el OPTIONS en la primera línea absoluta de tus reglas
+                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                    .requestMatchers("/usuarios/login", "/usuarios/cambiar-contrasena", "/api/numeros").permitAll()
+                    .requestMatchers("/usuarios/editar/{id}", "/usuarios/borrar/{id}").hasRole("ANC")
+                    .requestMatchers("/usuarios", "/usuarios/crear", "/api/editar/{id}", "/api/borrar/{id}", "/api/agregar").hasAnyRole("ANC", "SM")
+                    .anyRequest().authenticated()
+            );
+            
+    return http.build();
+}
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                // 1. LE AVISAMOS A SPRING SECURITY QUE USE TU CONFIGURACIÓN DE CORS
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                // 2. Desactivamos CSRF para poder hacer POST/PUT
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-        // Deja el OPTIONS en la primera línea absoluta de tus reglas
-        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-        .requestMatchers("/usuarios/login", "/usuarios/cambiar-contrasena", "/api/numeros").permitAll()
-        .requestMatchers("/usuarios/editar/{id}", "/usuarios/borrar/{id}").hasRole("ANC")
-        .requestMatchers("/usuarios", "/usuarios/crear", "/api/editar/{id}", "/api/borrar/{id}", "/api/agregar").hasAnyRole("ANC", "SM")
-        .anyRequest().authenticated()
-);
-        return http.build();
-    }
+// 4. NUEVO: Forzar SameSite=None y Secure en la cookie JSESSIONID para Chrome/Netlify
+@Bean
+public org.springframework.boot.web.servlet.server.CookieSameSiteSupplier cookieSameSiteSupplier() {
+    return org.springframework.boot.web.servlet.server.CookieSameSiteSupplier.ofNone().withSecure();
+}
+
+
+
+
+    
 
     @Bean
     public PasswordEncoder passwordEncoder() {
