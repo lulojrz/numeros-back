@@ -14,7 +14,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("api")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "https://colegiales.netlify.app")
 
 
 public class NumeroController {
