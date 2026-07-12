@@ -19,4 +19,7 @@ public class Experiencia {
     @ManyToOne
     @JoinColumn(name = "usuario")
     private Usuario usuario;
+
+    private String titulo;
+    private String descripcion;
 }
