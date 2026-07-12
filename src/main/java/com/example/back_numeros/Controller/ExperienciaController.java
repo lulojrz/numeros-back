@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("experiencias")
+@RequestMapping("/experiencias")
 @CrossOrigin(origins = "https://colegiales.netlify.app")
 public class ExperienciaController {
     @Autowired
