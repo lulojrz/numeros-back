@@ -21,7 +21,7 @@ public class ExperienciaController {
 
     }
     @PostMapping("/agregar")
-    public Experiencia agregarNumero(@RequestBody Experiencia experiencia){
+    public Experiencia agregarExperiencia(@RequestBody Experiencia experiencia){
         if(experiencia != null){
             experienciaRepository.save(experiencia);
         }
