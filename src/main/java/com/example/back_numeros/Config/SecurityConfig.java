@@ -34,8 +34,8 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
             .authorizeHttpRequests(auth -> auth
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                     .requestMatchers("/usuarios/login", "/usuarios/cambiar-contrasena", "/api/numeros","/usuarios").permitAll()
-                    .requestMatchers("/usuarios/editar/{id}", "/usuarios/borrar/{id}").hasAuthority("ANC")
-                    .requestMatchers( "/usuarios/crear", "/api/editar/{id}", "/api/borrar/{id}", "/api/agregar").hasAnyAuthority("ANC", "SM")
+                    .requestMatchers("/usuarios/editar/{id}", "/usuarios/borrar/{id}").hasAuthority("ROLE_ANC")
+                    .requestMatchers( "/usuarios/crear", "/api/editar/{id}", "/api/borrar/{id}", "/api/agregar").hasAnyAuthority("ROLE_ANC", "ROLE_SM")
                     .anyRequest().authenticated()
             );
             
