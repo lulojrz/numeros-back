@@ -24,7 +24,7 @@ public class Numero {
     private String numero;
 
 
-    @Column(name = "ultima_fecha", nullable = false, updatable = false)
+    @Column(name = "ultima_fecha", nullable = false)
 
     private LocalDateTime ultimaFecha;
 
