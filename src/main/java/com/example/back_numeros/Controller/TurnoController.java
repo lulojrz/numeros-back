@@ -2,9 +2,11 @@ package com.example.back_numeros.Controller;
 
 
 import com.example.back_numeros.Repository.PlantillaTurnoRepository;
+import com.example.back_numeros.Repository.PuntoPredicacionRepository;
 import com.example.back_numeros.Repository.TurnoRepository;
 import com.example.back_numeros.Repository.UsuarioRepository;
 import com.example.back_numeros.model.PlantillaTurno;
+import com.example.back_numeros.model.PuntoPredicacion;
 import com.example.back_numeros.model.Turno;
 import com.example.back_numeros.model.Usuario;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,9 +29,27 @@ public class TurnoController {
 
     @Autowired
     private PlantillaTurnoRepository plantillaTurnoRepository;
+    @Autowired
+    private PuntoPredicacionRepository puntoPredicacionRepository;
 
     @Autowired
     private UsuarioRepository usuarioRepository; // Tu repo de usuarios existente
+
+    @GetMapping("/puntos")
+    public List<PuntoPredicacion> obtenerPuntos(){
+        return puntoPredicacionRepository.findAll();
+    }
+    @PostMapping("/puntos")
+    public PuntoPredicacion agregarPunto(@RequestBody PuntoPredicacion puntoPredicacion){
+        puntoPredicacionRepository.save(puntoPredicacion);
+        return puntoPredicacion;
+
+    }
+
+
+
+
+
 
     // 1. TRAER TURNOS DE UNA SEMANA
     @GetMapping("/semana")
