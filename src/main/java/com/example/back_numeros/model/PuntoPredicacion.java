@@ -1,13 +1,13 @@
 package com.example.back_numeros.model;
 
 import jakarta.persistence.*;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
 @Entity
 @Table(name = "puntos_predicacion")
-@Getter
-@Setter
+@Data
 public class PuntoPredicacion {
 
     @Id

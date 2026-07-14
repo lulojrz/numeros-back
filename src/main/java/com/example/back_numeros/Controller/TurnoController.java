@@ -46,6 +46,19 @@ public class TurnoController {
 
     }
 
+    @PutMapping("/puntos/{id}")
+    public PuntoPredicacion editarPunto(@PathVariable Long id, @RequestBody PuntoPredicacion puntoPredicacion_a_editar) {
+        Optional<PuntoPredicacion> puntoPredicacion1 = puntoPredicacionRepository.findById(id);
+
+        return puntoPredicacion1.map(puntoPredicacion2 -> {
+
+            puntoPredicacion2.setActivo(puntoPredicacion_a_editar.isActivo());
+
+
+
+            return puntoPredicacionRepository.save(puntoPredicacion2);
+        }).orElseThrow(() -> new RuntimeException("No se encontró el punto con ID: " + id));
+    }
 
 
 
