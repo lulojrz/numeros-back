@@ -63,6 +63,23 @@ public class TurnoController {
 
 
 
+    @PostMapping("/crear")
+    public PlantillaTurno crearTurno(@RequestBody PlantillaTurno plantillaTurno){
+        plantillaTurnoRepository.save(plantillaTurno);
+        return plantillaTurno;
+    }
+
+    @GetMapping("/obtener")
+    public List<PlantillaTurno> obtenerTurnos(){return plantillaTurnoRepository.findAll();}
+    @DeleteMapping("/eliminar/{id}")
+    public Optional<PlantillaTurno> borrarTurno(@PathVariable Long id){
+        Optional<PlantillaTurno> turno = plantillaTurnoRepository.findById(id);
+        plantillaTurnoRepository.deleteById(id);
+        return turno;
+
+    }
+
+
 
     // 1. TRAER TURNOS DE UNA SEMANA
     @GetMapping("/semana")

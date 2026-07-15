@@ -60,7 +60,12 @@ public class SecurityConfig {
                                 "/api/agregar",
                                 "/api/turnos/puntos",
                                 "/api/turnos/puntos/{id}",     // <-- Corregido: Agregada la barra "/" inicial
-                                "/api/turnos/generar"          // <-- Agregado: Ahora protegido para que no lo use cualquiera
+                                "/api/turnos/generar" ,
+                                "/api/turnos/crear",
+                                "/api/turnos/obtener",
+                                "/api/turnos/eliminar/{id}"
+
+                                // <-- Agregado: Ahora protegido para que no lo use cualquiera
                         ).hasAnyAuthority("ROLE_ANC", "ROLE_SM")
 
                         .anyRequest().authenticated()
