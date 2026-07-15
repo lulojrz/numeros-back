@@ -17,31 +17,57 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-      @Bean
-public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    http
-            // 1. LE AVISAMOS A SPRING SECURITY QUE USE TU CONFIGURACIÓN DE CORS
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            
-            // 2. Desactivamos CSRF para poder hacer POST/PUT
-            .csrf(csrf -> csrf.disable())
-            
-            // 3. Gestión de sesiones
-            .sessionManagement(session -> session
-                    .sessionFixation(sessionFixation -> sessionFixation.newSession())
-            )
-            
-            .authorizeHttpRequests(auth -> auth
-                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                    .requestMatchers("/usuarios/login","/api/numeros").permitAll()
-                    .requestMatchers("/api/editar/{id}","/usuarios/cambiar-contrasena", "/usuarios","/experiencias/traer","/experiencias/agregar").authenticated()
-                    .requestMatchers( "/usuarios/borrar/{id}").hasAuthority("ROLE_ANC")
-                    .requestMatchers( "/usuarios/crear", "/api/borrar/{id}", "/api/agregar","/api/turnos/puntos","api/turnos/puntos/{id}").hasAnyAuthority("ROLE_ANC", "ROLE_SM")
-                    .anyRequest().authenticated()
-            );
-            
-    return http.build();
-}
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                // 1. LE AVISAMOS A SPRING SECURITY QUE USE TU CONFIGURACIÓN DE CORS
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
+                // 2. Desactivamos CSRF para poder hacer POST/PUT
+                .csrf(csrf -> csrf.disable())
+
+                // 3. Gestión de sesiones
+                .sessionManagement(session -> session
+                        .sessionFixation(sessionFixation -> sessionFixation.newSession())
+                )
+
+                .authorizeHttpRequests(auth -> auth
+                        // Permitir preflights
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // Públicos (Login y ver números disponibles)
+                        .requestMatchers("/usuarios/login", "/api/numeros").permitAll()
+
+                        // Acciones de cualquier usuario AUTENTICADO (incluye anotarse en turnos y ver la semana)
+                        .requestMatchers(
+                                "/api/editar/{id}",
+                                "/usuarios/cambiar-contrasena",
+                                "/usuarios",
+                                "/experiencias/traer",
+                                "/experiencias/agregar",
+                                "/api/turnos/semana",          // <-- Agregado para orden
+                                "/api/turnos/anotarse/{id}"    // <-- Agregado para orden
+                        ).authenticated()
+
+                        // Exclusivo Administrador Supremo (ANC)
+                        .requestMatchers("/usuarios/borrar/{id}").hasAuthority("ROLE_ANC")
+
+                        // Exclusivo Administradores y Moderadores (ANC, SM)
+                        .requestMatchers(
+                                "/usuarios/crear",
+                                "/api/borrar/{id}",
+                                "/api/agregar",
+                                "/api/turnos/puntos",
+                                "/api/turnos/puntos/{id}",     // <-- Corregido: Agregada la barra "/" inicial
+                                "/api/turnos/generar"          // <-- Agregado: Ahora protegido para que no lo use cualquiera
+                        ).hasAnyAuthority("ROLE_ANC", "ROLE_SM")
+
+                        .anyRequest().authenticated()
+                );
+
+        return http.build();
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -52,14 +78,14 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Le habilitamos la entrada exacta a tu puerto de React
+        // Le habilitamos la entrada exacta a tu puerto de Netlify
         configuration.setAllowedOrigins(List.of("https://colegiales.netlify.app"));
 
-        // Permitimos los métodos que vas a usar en tus contextos de React
+        // Permitimos los métodos que vas a usar
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 
-        // Permitimos que viajen headers comunes (como el Content-Type para los JSON)
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Cache-Control"));
+        // Permitimos cabeceras estándar completas para evitar bloqueos del navegador
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Cache-Control", "Accept", "Origin"));
 
         configuration.setAllowCredentials(true);
 

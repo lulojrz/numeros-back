@@ -21,7 +21,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/turnos")
-@CrossOrigin(origins = "https://colegiales.netlify.app", allowCredentials = "true") // Ajustá según tu config de CORS
+@CrossOrigin(origins = "https://colegiales.netlify.app") // Ajustá según tu config de CORS
 public class TurnoController {
 
     @Autowired
