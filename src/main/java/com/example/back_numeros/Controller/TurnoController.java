@@ -125,6 +125,9 @@ public class TurnoController {
             nuevoTurno.setHoraInicio(plantilla.getHoraInicio());
             nuevoTurno.setHoraFin(plantilla.getHoraFin());
             nuevoTurno.setPunto(plantilla.getPunto());
+            // ¡ESTA ES LA MAGIA!: Si el molde tiene hermanos fijos, los copia al turno de la semana
+            nuevoTurno.setPublicador1(plantilla.getPublicador1());
+            nuevoTurno.setPublicador2(plantilla.getPublicador2());
 
             turnoRepository.save(nuevoTurno);
         }

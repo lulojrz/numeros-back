@@ -28,4 +28,12 @@ public class PlantillaTurno {
 
     @Column(name = "hora_fin", nullable = false)
     private LocalTime horaFin;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "publicador1_id")
+    private Usuario publicador1;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "publicador2_id")
+    private Usuario publicador2;
 }
