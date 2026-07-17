@@ -72,13 +72,13 @@ public class TurnoController {
     @GetMapping("/obtener")
     public List<PlantillaTurno> obtenerTurnos(){return plantillaTurnoRepository.findAll();}
     @DeleteMapping("/eliminar/{id}")
-    public Optional<PlantillaTurno> borrarTurno(@PathVariable Long id){
-        Optional<PlantillaTurno> turno = plantillaTurnoRepository.findById(id);
+    public ResponseEntity<String> borrarTurno(@PathVariable Long id) {
+        if (!plantillaTurnoRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
         plantillaTurnoRepository.deleteById(id);
-        return turno;
-
+        return ResponseEntity.ok("Horario de plantilla eliminado correctamente.");
     }
-
 
 
     // 1. TRAER TURNOS DE UNA SEMANA
