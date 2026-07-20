@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -34,6 +35,8 @@ public class TurnoController {
 
     @Autowired
     private UsuarioRepository usuarioRepository; // Tu repo de usuarios existente
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     @GetMapping("/puntos")
     public List<PuntoPredicacion> obtenerPuntos(){
@@ -177,6 +180,7 @@ public class TurnoController {
         }
 
         Turno actualizado = turnoRepository.save(turno);
+        messagingTemplate.convertAndSend("/topic/turnos", "Actualizacion");
         return ResponseEntity.ok(actualizado);
     }
 
