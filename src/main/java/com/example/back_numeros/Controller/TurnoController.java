@@ -182,7 +182,7 @@ public class TurnoController {
 
 
    //TRAER TURNOS POR USUARIO
-    @GetMapping("/usuario/{username}")
+    @GetMapping("/{username}")
     public List<Turno> encontrarTurnos(@PathVariable String usuario){
         return turnoRepository.findByUsuario(usuario);
     }
