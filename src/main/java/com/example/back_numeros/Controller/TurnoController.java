@@ -181,9 +181,10 @@ public class TurnoController {
     }
 
 
-   //TRAER TURNOS POR USUARIO
-    @GetMapping("/{username}")
-    public List<Turno> encontrarTurnos(@PathVariable String usuario){
-        return turnoRepository.findByUsuario(usuario);
+    // TRAER TURNOS POR USUARIO
+    @GetMapping("/usuario/{usuario}")
+    public List<Turno> encontrarTurnos(@PathVariable String usuario) {
+        // Le pasamos 'usuario' dos veces: una para publicador1 y otra para publicador2
+        return turnoRepository.findByPublicador1_UsuarioOrPublicador2_Usuario(usuario, usuario);
     }
 }
