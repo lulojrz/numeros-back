@@ -187,4 +187,9 @@ public class TurnoController {
         // Le pasamos 'usuario' dos veces: una para publicador1 y otra para publicador2
         return turnoRepository.findByPublicador1_UsuarioOrPublicador2_Usuario(usuario, usuario);
     }
+    //TRAER TODOS LOS TURNOS
+    @GetMapping("/todos")
+    public List<Turno> traerTurnos(){
+        return turnoRepository.findAll();
+    }
 }

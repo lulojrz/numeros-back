@@ -63,7 +63,8 @@ public class SecurityConfig {
                                 "/api/turnos/generar" ,
                                 "/api/turnos/crear",
                                 "/api/turnos/obtener",
-                                "/api/turnos/eliminar/{id}"
+                                "/api/turnos/eliminar/{id}",
+                                "/api/turnos/todos"
 
                                 // <-- Agregado: Ahora protegido para que no lo use cualquiera
                         ).hasAnyAuthority("ROLE_ANC", "ROLE_SM")
