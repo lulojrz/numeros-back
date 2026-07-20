@@ -179,4 +179,11 @@ public class TurnoController {
         Turno actualizado = turnoRepository.save(turno);
         return ResponseEntity.ok(actualizado);
     }
+
+
+   //TRAER TURNOS POR USUARIO
+    @GetMapping("/usuario/{username}")
+    public List<Turno> encontrarTurnos(@PathVariable String usuario){
+        return turnoRepository.findByUsuario(usuario);
+    }
 }
