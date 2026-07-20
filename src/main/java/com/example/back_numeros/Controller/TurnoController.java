@@ -192,8 +192,14 @@ public class TurnoController {
         return turnoRepository.findByPublicador1_UsuarioOrPublicador2_Usuario(usuario, usuario);
     }
     //TRAER TODOS LOS TURNOS
+    // En TurnoController.java
     @GetMapping("/todos")
-    public List<Turno> traerTurnos(){
+    public List<Turno> traerTurnosPorAno(@RequestParam(required = false) String year){
+        if (year != null && !year.isEmpty()) {
+            // Devuelve solo los turnos que empiezan con ese año (ej: "2026")
+            return turnoRepository.findByFechaStartingWith(year);
+        }
+        // Por defecto (por si acaso) devuelve todos
         return turnoRepository.findAll();
     }
 }
