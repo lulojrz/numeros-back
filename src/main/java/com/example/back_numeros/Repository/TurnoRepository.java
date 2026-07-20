@@ -10,6 +10,6 @@ import java.util.List;
 public interface TurnoRepository extends JpaRepository<Turno, Long> {
     // Acá podemos buscar turnos de una semana específica
     List<Turno> findByFechaBetweenOrderByFechaAscHoraInicioAsc(LocalDate inicio, LocalDate fin);
-    //buscar turnos por usuario
-    List<Turno> findByUsuario(String usuario);
+    // Buscar turnos donde el usuario esté como publicador 1 O como publicador 2 (pasando el String del nombre)
+    List<Turno> findByPublicador1_UsuarioOrPublicador2_Usuario(String usuario1, String usuario2);
 }
