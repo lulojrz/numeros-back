@@ -12,6 +12,4 @@ public interface TurnoRepository extends JpaRepository<Turno, Long> {
     List<Turno> findByFechaBetweenOrderByFechaAscHoraInicioAsc(LocalDate inicio, LocalDate fin);
     // Buscar turnos donde el usuario esté como publicador 1 O como publicador 2 (pasando el String del nombre)
     List<Turno> findByPublicador1_UsuarioOrPublicador2_Usuario(String usuario1, String usuario2);
-    // En TurnoRepository.java
-    List<Turno> findByFechaStartingWith(String year);
 }

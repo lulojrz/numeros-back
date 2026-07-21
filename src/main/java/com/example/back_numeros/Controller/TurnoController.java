@@ -192,12 +192,18 @@ public class TurnoController {
         return turnoRepository.findByPublicador1_UsuarioOrPublicador2_Usuario(usuario, usuario);
     }
     //TRAER TODOS LOS TURNOS
-    // En TurnoController.java
     @GetMapping("/todos")
     public List<Turno> traerTurnosPorAno(@RequestParam(required = false) String year){
         if (year != null && !year.isEmpty()) {
-            // Devuelve solo los turnos que empiezan con ese año (ej: "2026")
-            return turnoRepository.findByFechaStartingWith(year);
+            try {
+                int y = Integer.parseInt(year);
+                java.time.LocalDate inicio = java.time.LocalDate.of(y, 1, 1);
+                java.time.LocalDate fin = java.time.LocalDate.of(y, 12, 31);
+                // Usamos el método que ya tenías y que sí es compatible con LocalDate
+                return turnoRepository.findByFechaBetweenOrderByFechaAscHoraInicioAsc(inicio, fin);
+            } catch (Exception e) {
+                return turnoRepository.findAll();
+            }
         }
         // Por defecto (por si acaso) devuelve todos
         return turnoRepository.findAll();
