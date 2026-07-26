@@ -38,4 +38,6 @@ public class Numero {
     @JoinColumn(name = "reservadoA")
     private Usuario reservadoA;
 
+    private LocalDateTime fechaReserva;
+
 }

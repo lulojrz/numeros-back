@@ -38,6 +38,7 @@ UsuarioRepository usuarioRepository;
             NumeroExistente.setUltimaFecha(numero_a_editar.getUltimaFecha());
             NumeroExistente.setTocar(numero_a_editar.getTocar());
             NumeroExistente.setEdificio(numero_a_editar.getEdificio());
+            NumeroExistente.setFechaReserva(numero_a_editar.getFechaReserva());
 
 
             // 1. Manejo de ultUsuario
