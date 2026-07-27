@@ -33,9 +33,6 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(auth -> auth
-                        // Permitir preflights
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
                         // Públicos (Login y ver números disponibles)
                         .requestMatchers("/usuarios/login", "/api/numeros","/api/turnos/{username}").permitAll()
 
@@ -91,7 +88,7 @@ public class SecurityConfig {
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 
         // Permitimos cabeceras estándar completas para evitar bloqueos del navegador
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Cache-Control", "Accept", "Origin"));
+        configuration.setAllowedHeaders(List.of("*"));
 
         configuration.setAllowCredentials(true);
 

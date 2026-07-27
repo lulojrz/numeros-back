@@ -15,7 +15,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/experiencias")
-@CrossOrigin(origins = "https://colegiales.netlify.app")
+
 public class ExperienciaController {
     @Autowired
     ExperienciaRepository experienciaRepository;

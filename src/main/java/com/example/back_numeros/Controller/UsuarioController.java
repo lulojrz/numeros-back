@@ -23,7 +23,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("usuarios")
-@CrossOrigin(origins = "https://colegiales.netlify.app")
+
 public class UsuarioController {
     @Autowired
     UsuarioRepository usuarioRepository;
