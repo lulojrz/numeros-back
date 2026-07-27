@@ -45,6 +45,7 @@ public class TurnoController {
     @PostMapping("/puntos")
     public PuntoPredicacion agregarPunto(@RequestBody PuntoPredicacion puntoPredicacion){
         puntoPredicacionRepository.save(puntoPredicacion);
+        messagingTemplate.convertAndSend("/topic/turnos", "Actualizacion");
         return puntoPredicacion;
 
     }
@@ -57,9 +58,9 @@ public class TurnoController {
 
             puntoPredicacion2.setActivo(puntoPredicacion_a_editar.isActivo());
 
-
-
-            return puntoPredicacionRepository.save(puntoPredicacion2);
+            PuntoPredicacion guardado = puntoPredicacionRepository.save(puntoPredicacion2);
+            messagingTemplate.convertAndSend("/topic/turnos", "Actualizacion");
+            return guardado;
         }).orElseThrow(() -> new RuntimeException("No se encontró el punto con ID: " + id));
     }
 
@@ -80,6 +81,7 @@ public class TurnoController {
             return ResponseEntity.notFound().build();
         }
         plantillaTurnoRepository.deleteById(id);
+        messagingTemplate.convertAndSend("/topic/turnos", "Actualizacion");
         return ResponseEntity.ok("Horario de plantilla eliminado correctamente.");
     }
 
@@ -135,6 +137,7 @@ public class TurnoController {
             turnoRepository.save(nuevoTurno);
         }
 
+        messagingTemplate.convertAndSend("/topic/turnos", "Actualizacion");
         return ResponseEntity.ok("Se generaron con éxito los turnos para la semana del " + lunes);
     }
 
