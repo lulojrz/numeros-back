@@ -33,6 +33,9 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(auth -> auth
+                        // Permitir preflight CORS
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        
                         // Públicos (Login y ver números disponibles)
                         .requestMatchers("/usuarios/login", "/api/numeros","/api/turnos/{username}").permitAll()
 
