@@ -37,7 +37,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         
                         // Públicos (Login y ver números disponibles)
-                        .requestMatchers("/usuarios/login", "/api/numeros","/api/turnos/{username}").permitAll()
+                        .requestMatchers("/usuarios/login", "/api/numeros","/api/turnos/{username}", "/error").permitAll()
 
                         // Acciones de cualquier usuario AUTENTICADO (incluye anotarse en turnos y ver la semana)
                         .requestMatchers(
@@ -85,7 +85,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // Le habilitamos la entrada exacta a tu puerto de Netlify
-        configuration.setAllowedOrigins(List.of("https://colegiales.netlify.app"));
+        configuration.setAllowedOriginPatterns(List.of("https://colegiales.netlify.app", "http://localhost:*"));
 
         // Permitimos los métodos que vas a usar
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
