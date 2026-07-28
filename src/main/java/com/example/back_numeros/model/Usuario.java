@@ -16,7 +16,10 @@ public class Usuario {
     private String nombre;
     private String apellido;
     private String usuario;
+    
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private String contrasena;
+    
     private String privilegio;
 
 
