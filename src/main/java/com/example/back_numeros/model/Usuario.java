@@ -17,7 +17,7 @@ public class Usuario {
     private String apellido;
     private String usuario;
     
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.WRITE_ONLY)
     private String contrasena;
     
     private String privilegio;
