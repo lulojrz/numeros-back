@@ -21,6 +21,9 @@ public class Usuario {
     private String contrasena;
     
     private String privilegio;
+    private String asignacion;
+    private Boolean banner;
+
 
 
 }
