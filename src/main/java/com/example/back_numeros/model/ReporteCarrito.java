@@ -1,30 +1,32 @@
 package com.example.back_numeros.model;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
-@Table(name = "experiencias")
+@Table(name = "reporte_carritos")
 @Data
-public class Experiencia {
+public class ReporteCarrito {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    @Column(name = "fecha", nullable = false, updatable = false)
-    private LocalDateTime fecha;
+   private  Long id;
     @ManyToOne
     @JoinColumn(name = "usuario")
     @JsonIgnoreProperties({"contrasena", "privilegio", "authorities", "enabled", "accountNonExpired", "accountNonLocked", "credentialsNonExpired"})
     private Usuario usuario;
+    @Column(name = "fecha", nullable = false, updatable = false)
+    private LocalDateTime fecha;
+    @Column(name = "falta_literatura")
+    private Boolean faltaLiteratura;
+    @Column(name="literatura_detalle")
+    private String literaturaDetalle;
+    @Column(name = "necesita_limpieza")
+    private Boolean necesitaLimpieza;
+    private String observaciones;
 
-    private String titulo;
-    private String descripcion;
-    @OneToMany(mappedBy = "experiencia", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ReaccionExperiencia> reacciones_list;
+
 }

@@ -1,9 +1,11 @@
 package com.example.back_numeros.Controller;
 
 import com.example.back_numeros.Repository.ExperienciaRepository;
+import com.example.back_numeros.Repository.ReaccionExperienciaRepository;
 import com.example.back_numeros.Repository.UsuarioRepository;
 import com.example.back_numeros.model.Experiencia;
 import com.example.back_numeros.model.Numero;
+import com.example.back_numeros.model.ReaccionExperiencia;
 import com.example.back_numeros.model.Usuario;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -21,6 +23,8 @@ public class ExperienciaController {
     ExperienciaRepository experienciaRepository;
     @Autowired
     UsuarioRepository usuarioRepository;
+    @Autowired
+    ReaccionExperienciaRepository reaccionExperienciaRepository;
 
 
     @GetMapping("/traer")
@@ -52,5 +56,41 @@ public class ExperienciaController {
             // Si no existe el usuario, devolvemos un error limpio en vez de explotar con un 500
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado en el sistema");
         }
+    }
+    @PostMapping("/{id}/reaccionar")
+    public ResponseEntity<?> reaccionar(
+            @PathVariable Long id,
+            @RequestParam String tipo,
+            @RequestParam String usuario) {
+
+        // 1. Buscar la experiencia por 'id'
+        Optional<Experiencia> expOpt = experienciaRepository.findById(id);
+        if (expOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        Experiencia experiencia = expOpt.get();
+        // Buscar al usuario que está reaccionando
+        Optional<Usuario> userOpt = usuarioRepository.findByUsuario(usuario);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body("Usuario no encontrado");
+        }
+        Usuario user = userOpt.get();
+        // 2. Verificar si ese 'usuario' ya reaccionó con ese 'tipo' en esa experiencia
+        Optional<ReaccionExperiencia> reaccionExistente = experiencia.getReacciones_list().stream()
+                .filter(r -> r.getUsuario().getUsuario().equals(usuario) && r.getTipo().equals(tipo))
+                .findFirst();
+        if (reaccionExistente.isPresent()) {
+            // 4. Si ya existe, la eliminamos (funciona como un botón de "Quitar Me Gusta")
+            reaccionExperienciaRepository.delete(reaccionExistente.get());
+        } else {
+            // 3. Si no existe, crear la ReaccionExperiencia y guardarla
+            ReaccionExperiencia nuevaReaccion = new ReaccionExperiencia();
+            nuevaReaccion.setExperiencia(experiencia);
+            nuevaReaccion.setUsuario(user);
+            nuevaReaccion.setTipo(tipo);
+            reaccionExperienciaRepository.save(nuevaReaccion);
+        }
+
+        return ResponseEntity.ok().build();
     }
 }
