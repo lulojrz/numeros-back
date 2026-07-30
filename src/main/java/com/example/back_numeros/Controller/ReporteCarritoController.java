@@ -24,16 +24,26 @@ public class ReporteCarritoController {
 
     @PostMapping("/subir")
     public ResponseEntity<?> subirReporte(@RequestBody ReporteCarrito reporteCarrito){ 
-        if (reporteCarrito.getUsuario() != null && reporteCarrito.getUsuario().getUsuario() != null) {
+        try {
+            if (reporteCarrito.getUsuario() == null || reporteCarrito.getUsuario().getUsuario() == null) {
+                return ResponseEntity.badRequest().body("Falta usuario en la peticion");
+            }
             Optional<Usuario> u = usuarioRepository.findByUsuario(reporteCarrito.getUsuario().getUsuario());
             if (u.isPresent()) {
                 reporteCarrito.setUsuario(u.get());
             } else {
                 return ResponseEntity.badRequest().body("Usuario no encontrado");
             }
+            
+            // Establecer la fecha en el servidor
+            reporteCarrito.setFecha(java.time.LocalDateTime.now());
+            
+            reporteCarritoRepository.save(reporteCarrito);
+            return ResponseEntity.ok().build(); 
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Error en el servidor: " + e.getMessage());
         }
-        reporteCarritoRepository.save(reporteCarrito);
-        return ResponseEntity.ok().build(); 
     }
 
     @GetMapping("/traer")
