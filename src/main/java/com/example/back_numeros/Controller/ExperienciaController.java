@@ -57,6 +57,7 @@ public class ExperienciaController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado en el sistema");
         }
     }
+    @org.springframework.transaction.annotation.Transactional
     @PostMapping("/{id}/reaccionar")
     public ResponseEntity<?> reaccionar(
             @PathVariable Long id,
@@ -80,7 +81,7 @@ public class ExperienciaController {
         Optional<ReaccionExperiencia> reaccionExistente = Optional.empty();
         if (reacciones != null) {
             reaccionExistente = reacciones.stream()
-                    .filter(r -> r.getUsuario() != null && r.getUsuario().getUsuario().equals(usuario) && r.getTipo().equals(tipo))
+                    .filter(r -> r.getUsuario() != null && usuario.equals(r.getUsuario().getUsuario()) && tipo.equals(r.getTipo()))
                     .findFirst();
         }
         if (reaccionExistente.isPresent()) {
