@@ -1,12 +1,12 @@
 package com.example.back_numeros.Controller;
 
-
 import com.example.back_numeros.Repository.ReporteCarritoRepository;
 import com.example.back_numeros.Repository.UsuarioRepository;
 import com.example.back_numeros.model.ReporteCarrito;
 import com.example.back_numeros.model.Usuario;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,5 +34,10 @@ public class ReporteCarritoController {
         }
         reporteCarritoRepository.save(reporteCarrito);
         return ResponseEntity.ok().build(); 
+    }
+
+    @GetMapping("/traer")
+    public ResponseEntity<?> traerReportes() {
+        return ResponseEntity.ok(reporteCarritoRepository.findAll());
     }
 }
