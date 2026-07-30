@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.util.List;
+
 
 @Entity
 @Table(name = "experiencias")
@@ -25,6 +25,5 @@ public class Experiencia {
 
     private String titulo;
     private String descripcion;
-    @OneToMany(mappedBy = "experiencia", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ReaccionExperiencia> reacciones_list;
+
 }
