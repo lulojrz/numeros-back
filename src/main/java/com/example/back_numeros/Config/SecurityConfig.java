@@ -47,7 +47,8 @@ public class SecurityConfig {
                                 "/experiencias/traer",
                                 "/experiencias/agregar",
                                 "/api/turnos/semana",          // <-- Agregado para orden
-                                "/api/turnos/anotarse/{id}"    // <-- Agregado para orden
+                                "/api/turnos/anotarse/{id}",// <-- Agregado para orden,
+                                "/reporte/subir"
                         ).authenticated()
 
                         // Exclusivo Administrador Supremo (ANC)
@@ -64,7 +65,8 @@ public class SecurityConfig {
                                 "/api/turnos/crear",
                                 "/api/turnos/obtener",
                                 "/api/turnos/eliminar/{id}",
-                                "/api/turnos/todos"
+                                "/api/turnos/todos",
+                                "/reporte/traer"
 
                                 // <-- Agregado: Ahora protegido para que no lo use cualquiera
                         ).hasAnyAuthority("ROLE_ANC", "ROLE_SM")
