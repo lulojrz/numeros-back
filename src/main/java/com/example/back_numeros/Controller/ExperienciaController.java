@@ -76,9 +76,13 @@ public class ExperienciaController {
         }
         Usuario user = userOpt.get();
         // 2. Verificar si ese 'usuario' ya reaccionó con ese 'tipo' en esa experiencia
-        Optional<ReaccionExperiencia> reaccionExistente = experiencia.getReacciones_list().stream()
-                .filter(r -> r.getUsuario().getUsuario().equals(usuario) && r.getTipo().equals(tipo))
-                .findFirst();
+        List<ReaccionExperiencia> reacciones = experiencia.getReacciones_list();
+        Optional<ReaccionExperiencia> reaccionExistente = Optional.empty();
+        if (reacciones != null) {
+            reaccionExistente = reacciones.stream()
+                    .filter(r -> r.getUsuario() != null && r.getUsuario().getUsuario().equals(usuario) && r.getTipo().equals(tipo))
+                    .findFirst();
+        }
         if (reaccionExistente.isPresent()) {
             // 4. Si ya existe, la eliminamos (funciona como un botón de "Quitar Me Gusta")
             reaccionExperienciaRepository.delete(reaccionExistente.get());
