@@ -13,9 +13,10 @@ public class ReporteCarrito {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-   private  Long id;
+    private Long id;
+    
     @ManyToOne
-    @JoinColumn(name = "usuario")
+    @JoinColumn(name = "usuario_id")
     @JsonIgnoreProperties({"contrasena", "privilegio", "authorities", "enabled", "accountNonExpired", "accountNonLocked", "credentialsNonExpired"})
     private Usuario usuario;
     @Column(name = "fecha", nullable = false, updatable = false)
