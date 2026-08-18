@@ -23,6 +23,7 @@ public class Usuario {
     private String privilegio;
     private String asignacion;
     private Boolean banner;
+    private Boolean carrito;
 
 
 

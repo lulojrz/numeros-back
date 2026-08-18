@@ -42,6 +42,7 @@ public class UsuarioController {
                         usuario.setPrivilegio(usuario_a_editar.getPrivilegio());
                         usuario.setBanner(usuario_a_editar.getBanner());
                         usuario.setAsignacion(usuario_a_editar.getAsignacion());
+                        usuario.setCarrito(usuario_a_editar.getCarrito());
                 return usuarioRepository.save(usuario);
                 }
 
