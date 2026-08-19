@@ -2,15 +2,14 @@ package com.example.back_numeros.Controller;
 
 import com.example.back_numeros.Repository.ReporteCarritoRepository;
 import com.example.back_numeros.Repository.UsuarioRepository;
+import com.example.back_numeros.model.Numero;
 import com.example.back_numeros.model.ReporteCarrito;
 import com.example.back_numeros.model.Usuario;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.Optional;
 
 @RestController
@@ -49,5 +48,16 @@ public class ReporteCarritoController {
     @GetMapping("/traer")
     public ResponseEntity<?> traerReportes() {
         return ResponseEntity.ok(reporteCarritoRepository.findAll());
+    }
+
+    @DeleteMapping("eliminar/{id}")
+    public ResponseEntity<?> eliminarReporte(@PathVariable Long id){
+        Optional<ReporteCarrito> numero = reporteCarritoRepository.findById(id);
+        if (numero!=null){
+            reporteCarritoRepository.deleteById(id);
+            return ResponseEntity.ok("Eliminado exitosamente");
+        }else{
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("No se pudo borrar");
+        }
     }
 }
