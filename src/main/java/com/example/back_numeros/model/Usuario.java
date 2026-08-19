@@ -24,6 +24,7 @@ public class Usuario {
     private String asignacion;
     private Boolean banner;
     private Boolean carrito;
+    private String telefono;
 
 
 

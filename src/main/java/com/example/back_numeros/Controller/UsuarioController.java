@@ -43,6 +43,8 @@ public class UsuarioController {
                         usuario.setBanner(usuario_a_editar.getBanner());
                         usuario.setAsignacion(usuario_a_editar.getAsignacion());
                         usuario.setCarrito(usuario_a_editar.getCarrito());
+                        usuario.setTelefono(usuario_a_editar.getTelefono());
+
                 return usuarioRepository.save(usuario);
                 }
 
