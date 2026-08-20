@@ -64,7 +64,7 @@ public class UsuarioController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody Usuario loginRequest, HttpServletRequest request) {
+    public ResponseEntity<?> login(@RequestBody Usuario loginRequest, HttpServletRequest request) {
 
         Optional<Usuario> encontrado = usuarioRepository.findByUsuario(loginRequest.getUsuario());
 
@@ -88,7 +88,7 @@ public class UsuarioController {
             HttpSession session = request.getSession(true);
             session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, SecurityContextHolder.getContext());
 
-            return ResponseEntity.ok("correcto");
+            return ResponseEntity.ok(user);
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciales inválidas");
         }
