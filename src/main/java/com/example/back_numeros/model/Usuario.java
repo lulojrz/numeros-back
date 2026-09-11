@@ -25,6 +25,7 @@ public class Usuario {
     private Boolean banner;
     private Boolean carrito;
     private String telefono;
+    @Column(name = "habilitacionPublica")
     private Boolean habilitacionPublica;
 
 
