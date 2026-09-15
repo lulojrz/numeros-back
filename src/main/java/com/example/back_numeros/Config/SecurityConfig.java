@@ -11,6 +11,9 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.core.Ordered;
 
 import java.util.List;
 
@@ -83,16 +86,23 @@ public class SecurityConfig {
     }
 
     @Bean
+    public FilterRegistrationBean<CorsFilter> customCorsFilter(CorsConfigurationSource corsConfigurationSource) {
+        FilterRegistrationBean<CorsFilter> bean = new FilterRegistrationBean<>(new CorsFilter(corsConfigurationSource));
+        bean.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        return bean;
+    }
+
+    @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Le habilitamos la entrada exacta a tu puerto de Netlify
-        configuration.setAllowedOriginPatterns(List.of("https://colegiales.netlify.app", "http://localhost:*"));
+        // Use exact origins to be safe with credentials
+        configuration.setAllowedOrigins(List.of("https://colegiales.netlify.app", "http://localhost:5173", "http://localhost:3000", "http://localhost:8080"));
+        
+        // Allow all necessary methods
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"));
 
-        // Permitimos los métodos que vas a usar
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-
-        // Permitimos cabeceras estándar completas para evitar bloqueos del navegador
+        // Allow all headers
         configuration.setAllowedHeaders(List.of("*"));
 
         configuration.setAllowCredentials(true);
