@@ -23,6 +23,14 @@ public class ExperienciaController {
     ExperienciaRepository experienciaRepository;
     @Autowired
     UsuarioRepository usuarioRepository;
+    @DeleteMapping("/borrar/{id}")
+    public Optional<Experiencia> borrarExperiencia(@PathVariable Long id){
+        Optional<Experiencia> experiencia =experienciaRepository.findById(id);
+         experienciaRepository.deleteById(id);
+         return experiencia;
+
+
+    }
 
 
 

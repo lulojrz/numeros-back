@@ -25,5 +25,5 @@ public class Experiencia {
 
     private String titulo;
     private String descripcion;
-
+    private String categoria;
 }

@@ -69,7 +69,8 @@ public class SecurityConfig {
                                 "/api/turnos/obtener",
                                 "/api/turnos/eliminar/{id}",
                                 "/api/turnos/todos",
-                                "/reporte/traer"
+                                "/reporte/traer",
+                                "/experiencias/borrar"
 
                                 // <-- Agregado: Ahora protegido para que no lo use cualquiera
                         ).hasAnyAuthority("ROLE_ANC", "ROLE_SM")
