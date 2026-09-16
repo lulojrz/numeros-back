@@ -40,7 +40,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         
                         // Públicos (Login y ver números disponibles)
-                        .requestMatchers("/usuarios/login", "/api/numeros","/api/turnos/{username}", "/error").permitAll()
+                        .requestMatchers("/usuarios/login", "/api/numeros","/api/turnos/{username}", "/error", "/campanas/traer").permitAll()
 
                         // Acciones de cualquier usuario AUTENTICADO (incluye anotarse en turnos y ver la semana)
                         .requestMatchers(
@@ -70,7 +70,10 @@ public class SecurityConfig {
                                 "/api/turnos/eliminar/{id}",
                                 "/api/turnos/todos",
                                 "/reporte/traer",
-                                "/experiencias/borrar"
+                                "/experiencias/borrar/{id}",
+                                "/campanas/agregar",
+                                "/campanas/borrar/{id}",
+                                "/campanas/editar/{id}"
 
                                 // <-- Agregado: Ahora protegido para que no lo use cualquiera
                         ).hasAnyAuthority("ROLE_ANC", "ROLE_SM")
