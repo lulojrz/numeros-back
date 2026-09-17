@@ -16,7 +16,7 @@ public class Territorio {
 
     private String numero;
     
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "LONGTEXT")
     private String imagen; 
 
     @ManyToOne
