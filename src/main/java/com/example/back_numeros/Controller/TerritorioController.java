@@ -5,6 +5,8 @@ import com.example.back_numeros.model.Territorio;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.jdbc.core.JdbcTemplate;
+import jakarta.annotation.PostConstruct;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,6 +17,18 @@ public class TerritorioController {
 
     @Autowired
     TerritorioRepository territorioRepository;
+
+    @Autowired
+    JdbcTemplate jdbcTemplate;
+
+    @PostConstruct
+    public void init() {
+        try {
+            jdbcTemplate.execute("ALTER TABLE territorios MODIFY COLUMN imagen LONGTEXT");
+        } catch (Exception e) {
+            System.out.println("Nota: " + e.getMessage());
+        }
+    }
 
     @GetMapping("/traer")
     public List<Territorio> traerTerritorios() {
