@@ -1,6 +1,6 @@
 package com.example.back_numeros.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -35,6 +35,6 @@ public class Manzana {
 
     @ManyToOne
     @JoinColumn(name = "territorio_id")
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private Territorio territorio;
 }
