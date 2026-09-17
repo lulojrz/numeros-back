@@ -37,4 +37,7 @@ public class Manzana {
     @JoinColumn(name = "territorio_id")
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private Territorio territorio;
+
+    @OneToMany(mappedBy = "manzana", cascade = CascadeType.ALL)
+    private java.util.List<Edificio> edificios;
 }

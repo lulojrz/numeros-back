@@ -26,6 +26,10 @@ public class EdificioController {
         if (edificio == null) {
             return ResponseEntity.badRequest().body("El edificio no puede ser nulo");
         }
+        // Enlazar departamentos al edificio para que Hibernate asigne la llave foránea
+        if (edificio.getDepartamentos() != null) {
+            edificio.getDepartamentos().forEach(d -> d.setEdificio(edificio));
+        }
         Edificio guardado = edificioRepository.save(edificio);
         return ResponseEntity.ok(guardado);
     }
