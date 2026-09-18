@@ -19,6 +19,13 @@ public class Departamento {
     private String estado; 
     private Boolean tocar; 
 
+    @Column(columnDefinition = "TEXT")
+    private String observaciones;
+
+    @ManyToOne
+    @JoinColumn(name = "publicador_id")
+    private Usuario publicador;
+
     @Column(name = "ultima_fecha_trabajada")
     private LocalDateTime ultimaFechaTrabajada;
 

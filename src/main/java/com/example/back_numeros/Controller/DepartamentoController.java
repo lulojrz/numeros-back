@@ -21,6 +21,11 @@ public class DepartamentoController {
         return departamentoRepository.findAll();
     }
 
+    @GetMapping("/revisitas/{publicadorId}")
+    public List<Departamento> traerMisRevisitas(@PathVariable Long publicadorId) {
+        return departamentoRepository.findByPublicadorIdAndEstado(publicadorId, "Revisita");
+    }
+
     @PostMapping("/agregar")
     public ResponseEntity<?> agregarDepartamento(@RequestBody Departamento departamento) {
         if (departamento == null) {
@@ -48,6 +53,8 @@ public class DepartamentoController {
             departamento.setEstado(departamentoActualizado.getEstado());
             departamento.setTocar(departamentoActualizado.getTocar());
             departamento.setUltimaFechaTrabajada(departamentoActualizado.getUltimaFechaTrabajada());
+            departamento.setObservaciones(departamentoActualizado.getObservaciones());
+            departamento.setPublicador(departamentoActualizado.getPublicador());
             
             if (departamentoActualizado.getEdificio() != null) {
                 departamento.setEdificio(departamentoActualizado.getEdificio());
