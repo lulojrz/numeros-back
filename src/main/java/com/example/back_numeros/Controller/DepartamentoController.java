@@ -48,7 +48,11 @@ public class DepartamentoController {
             departamento.setEstado(departamentoActualizado.getEstado());
             departamento.setTocar(departamentoActualizado.getTocar());
             departamento.setUltimaFechaTrabajada(departamentoActualizado.getUltimaFechaTrabajada());
-            departamento.setEdificio(departamentoActualizado.getEdificio());
+            
+            if (departamentoActualizado.getEdificio() != null) {
+                departamento.setEdificio(departamentoActualizado.getEdificio());
+            }
+            
             Departamento actualizado = departamentoRepository.save(departamento);
             return ResponseEntity.ok(actualizado);
         }).orElseGet(() -> ResponseEntity.notFound().build());
