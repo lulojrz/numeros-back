@@ -60,6 +60,7 @@ public class TerritorioController {
             territorio.setNumero(territorioActualizado.getNumero());
             territorio.setImagen(territorioActualizado.getImagen());
             territorio.setAsignadoA(territorioActualizado.getAsignadoA());
+            territorio.setUltimaFechaTrabajada(territorioActualizado.getUltimaFechaTrabajada());
             territorio.setFechasTrabajado(territorioActualizado.getFechasTrabajado());
             // No tocamos la lista de manzanas aquí para evitar sobreescribirla por accidente
             Territorio actualizado = territorioRepository.save(territorio);

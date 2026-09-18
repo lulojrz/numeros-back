@@ -54,6 +54,7 @@ public class DepartamentoController {
             departamento.setTocar(departamentoActualizado.getTocar());
             departamento.setUltimaFechaTrabajada(departamentoActualizado.getUltimaFechaTrabajada());
             departamento.setObservaciones(departamentoActualizado.getObservaciones());
+            departamento.setHistorial(departamentoActualizado.getHistorial());
             departamento.setPublicador(departamentoActualizado.getPublicador());
             
             if (departamentoActualizado.getEdificio() != null) {

@@ -22,6 +22,9 @@ public class Departamento {
     @Column(columnDefinition = "TEXT")
     private String observaciones;
 
+    @Column(columnDefinition = "TEXT")
+    private String historial;
+
     @ManyToOne
     @JoinColumn(name = "publicador_id")
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)

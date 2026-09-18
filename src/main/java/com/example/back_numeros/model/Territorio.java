@@ -23,6 +23,9 @@ public class Territorio {
     @JoinColumn(name = "asignado_a_id")
     private Usuario asignadoA;
 
+    @Column(name = "ultima_fecha_trabajada")
+    private LocalDateTime ultimaFechaTrabajada;
+
     @ElementCollection
     @CollectionTable(name = "territorio_fechas", joinColumns = @JoinColumn(name = "territorio_id"))
     @Column(name = "fecha_trabajado")
