@@ -24,7 +24,11 @@ public class Departamento {
 
     @ManyToOne
     @JoinColumn(name = "publicador_id")
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private Usuario publicador;
+
+    @Column(name = "publicador_id", insertable = false, updatable = false)
+    private Long idPublicador;
 
     @Column(name = "ultima_fecha_trabajada")
     private LocalDateTime ultimaFechaTrabajada;
