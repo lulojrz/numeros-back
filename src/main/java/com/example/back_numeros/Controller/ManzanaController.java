@@ -50,7 +50,9 @@ public class ManzanaController {
             manzana.setCalleOeste(manzanaActualizada.getCalleOeste());
             manzana.setUltimaFechaTrabajada(manzanaActualizada.getUltimaFechaTrabajada());
             manzana.setCompletada(manzanaActualizada.getCompletada());
-            manzana.setTerritorio(manzanaActualizada.getTerritorio());
+            if (manzanaActualizada.getTerritorio() != null) {
+                manzana.setTerritorio(manzanaActualizada.getTerritorio());
+            }
             Manzana actualizada = manzanaRepository.save(manzana);
             return ResponseEntity.ok(actualizada);
         }).orElseGet(() -> ResponseEntity.notFound().build());

@@ -51,7 +51,9 @@ public class EdificioController {
             edificio.setCategoria(edificioActualizado.getCategoria());
             edificio.setCantidadPisos(edificioActualizado.getCantidadPisos());
             edificio.setDepartamentosPorPiso(edificioActualizado.getDepartamentosPorPiso());
-            edificio.setManzana(edificioActualizado.getManzana());
+            if (edificioActualizado.getManzana() != null) {
+                edificio.setManzana(edificioActualizado.getManzana());
+            }
             Edificio actualizado = edificioRepository.save(edificio);
             return ResponseEntity.ok(actualizado);
         }).orElseGet(() -> ResponseEntity.notFound().build());
