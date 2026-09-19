@@ -34,6 +34,7 @@ public class SalidaPredicacionController {
             salida.setHora(salidaActualizada.getHora());
             salida.setPuntoEncuentro(salidaActualizada.getPuntoEncuentro());
             salida.setConductor(salidaActualizada.getConductor());
+            salida.setTerritorio(salidaActualizada.getTerritorio());
             return ResponseEntity.ok(salidaRepository.save(salida));
         }).orElseGet(() -> ResponseEntity.notFound().build());
     }

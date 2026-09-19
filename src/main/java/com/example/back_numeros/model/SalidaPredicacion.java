@@ -26,4 +26,8 @@ public class SalidaPredicacion {
     @ManyToOne
     @JoinColumn(name = "conductor_id", nullable = false)
     private Usuario conductor;
+
+    @ManyToOne
+    @JoinColumn(name = "territorio_id", nullable = true)
+    private Territorio territorio;
 }
