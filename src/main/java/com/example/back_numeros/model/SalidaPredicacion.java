@@ -23,6 +23,9 @@ public class SalidaPredicacion {
     @Column(name = "punto_encuentro", nullable = false)
     private String puntoEncuentro;
 
+    @Column(name = "grupos")
+    private String grupos;
+
     @ManyToOne
     @JoinColumn(name = "conductor_id", nullable = false)
     private Usuario conductor;

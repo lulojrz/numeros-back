@@ -22,6 +22,7 @@ public class Usuario {
     
     private String privilegio;
     private String asignacion;
+    private String grupo;
     private Boolean banner;
     private Boolean carrito;
     private String telefono;
