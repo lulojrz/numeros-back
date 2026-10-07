@@ -33,4 +33,7 @@ public class Territorio {
 
     @OneToMany(mappedBy = "territorio", cascade = CascadeType.ALL)
     private List<Manzana> manzanas;
+
+    @OneToMany(mappedBy = "territorio", cascade = CascadeType.ALL)
+    private List<AsignacionTerritorio> asignaciones;
 }

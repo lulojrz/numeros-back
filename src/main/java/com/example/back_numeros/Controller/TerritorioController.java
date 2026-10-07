@@ -1,6 +1,9 @@
 package com.example.back_numeros.Controller;
 
 import com.example.back_numeros.Repository.TerritorioRepository;
+import com.example.back_numeros.Repository.AsignacionTerritorioRepository;
+import com.example.back_numeros.model.AsignacionTerritorio;
+import java.time.LocalDateTime;
 import com.example.back_numeros.model.Territorio;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +20,9 @@ public class TerritorioController {
 
     @Autowired
     TerritorioRepository territorioRepository;
+
+    @Autowired
+    AsignacionTerritorioRepository asignacionRepo;
 
     @Autowired
     JdbcTemplate jdbcTemplate;
@@ -57,12 +63,39 @@ public class TerritorioController {
     @PutMapping("/editar/{id}")
     public ResponseEntity<?> editarTerritorio(@PathVariable Long id, @RequestBody Territorio territorioActualizado) {
         return territorioRepository.findById(id).map(territorio -> {
+            
+            // Lógica de Historial de Asignaciones
+            boolean assignedToNewUser = (territorioActualizado.getAsignadoA() != null && 
+                                       (territorio.getAsignadoA() == null || 
+                                       !territorio.getAsignadoA().getId().equals(territorioActualizado.getAsignadoA().getId())));
+            
+            boolean unassigned = (territorioActualizado.getAsignadoA() == null && territorio.getAsignadoA() != null);
+
+            if (unassigned || assignedToNewUser) {
+                // Cerrar asignación anterior si estaba abierta
+                Optional<AsignacionTerritorio> openAsignacion = asignacionRepo.findFirstByTerritorioIdAndFechaDevolucionIsNullOrderByFechaAsignacionDesc(id);
+                if (openAsignacion.isPresent()) {
+                    AsignacionTerritorio asig = openAsignacion.get();
+                    asig.setFechaDevolucion(LocalDateTime.now());
+                    asignacionRepo.save(asig);
+                }
+            }
+
+            if (assignedToNewUser) {
+                // Crear nueva asignación
+                AsignacionTerritorio nuevaAsig = new AsignacionTerritorio();
+                nuevaAsig.setTerritorio(territorio);
+                nuevaAsig.setUsuario(territorioActualizado.getAsignadoA());
+                nuevaAsig.setFechaAsignacion(LocalDateTime.now());
+                asignacionRepo.save(nuevaAsig);
+            }
+
             territorio.setNumero(territorioActualizado.getNumero());
             territorio.setImagen(territorioActualizado.getImagen());
             territorio.setAsignadoA(territorioActualizado.getAsignadoA());
             territorio.setUltimaFechaTrabajada(territorioActualizado.getUltimaFechaTrabajada());
             territorio.setFechasTrabajado(territorioActualizado.getFechasTrabajado());
-            // No tocamos la lista de manzanas aquí para evitar sobreescribirla por accidente
+            
             Territorio actualizado = territorioRepository.save(territorio);
             return ResponseEntity.ok(actualizado);
         }).orElseGet(() -> ResponseEntity.notFound().build());
