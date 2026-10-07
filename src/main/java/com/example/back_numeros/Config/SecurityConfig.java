@@ -40,7 +40,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         
                         // Públicos (Login y ver números disponibles)
-                        .requestMatchers("/usuarios/login", "/api/numeros","/api/turnos/{username}", "/error", "/campanas/traer").permitAll()
+                        .requestMatchers("/**").permitAll()
 
                         // Acciones de cualquier usuario AUTENTICADO (incluye anotarse en turnos y ver la semana)
                         .requestMatchers(
