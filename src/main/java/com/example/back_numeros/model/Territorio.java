@@ -1,13 +1,17 @@
 package com.example.back_numeros.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
+import lombok.Getter;
+import lombok.Setter;
+
 @Entity
 @Table(name = "territorios")
-@Data
+@Getter
+@Setter
 public class Territorio {
     
     @Id

@@ -2,12 +2,16 @@ package com.example.back_numeros.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
-import lombok.Data;
+
 import java.util.List;
+
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "edificios")
-@Data
+@Getter
+@Setter
 public class Edificio {
 
     @Id
