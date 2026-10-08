@@ -32,9 +32,11 @@ public class SalidaPredicacion {
 
     @ManyToOne
     @JoinColumn(name = "conductor_id", nullable = false)
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Usuario conductor;
 
     @ManyToOne
     @JoinColumn(name = "territorio_id", nullable = true)
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "manzanas", "asignaciones"})
     private Territorio territorio;
 }
