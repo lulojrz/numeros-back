@@ -200,8 +200,9 @@ public class TurnoController {
         if (year != null && !year.isEmpty()) {
             try {
                 int y = Integer.parseInt(year);
-                java.time.LocalDate inicio = java.time.LocalDate.of(y, 1, 1);
-                java.time.LocalDate fin = java.time.LocalDate.of(y, 12, 31);
+                // Año de servicio: 1 de Septiembre (y - 1) al 31 de Agosto (y) inclusive
+                java.time.LocalDate inicio = java.time.LocalDate.of(y - 1, 9, 1);
+                java.time.LocalDate fin = java.time.LocalDate.of(y, 8, 31);
                 // Usamos el método que ya tenías y que sí es compatible con LocalDate
                 return turnoRepository.findByFechaBetweenOrderByFechaAscHoraInicioAsc(inicio, fin);
             } catch (Exception e) {
