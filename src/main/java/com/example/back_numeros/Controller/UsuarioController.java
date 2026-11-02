@@ -46,6 +46,7 @@ public class UsuarioController {
                         usuario.setTelefono(usuario_a_editar.getTelefono());
                         usuario.setHabilitacionPublica(usuario_a_editar.getHabilitacionPublica());
                         usuario.setGrupo(usuario_a_editar.getGrupo());
+                        usuario.setConductor(usuario_a_editar.getConductor());
 
                 return usuarioRepository.save(usuario);
                 }

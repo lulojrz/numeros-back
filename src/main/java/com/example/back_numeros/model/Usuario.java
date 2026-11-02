@@ -32,6 +32,7 @@ public class Usuario {
     private String telefono;
     @Column(name = "\"habilitacionPublica\"")
     private Boolean habilitacionPublica;
+    private Boolean conductor;
 
 
 
