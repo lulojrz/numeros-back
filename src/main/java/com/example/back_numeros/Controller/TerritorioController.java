@@ -10,8 +10,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.ConnectionCallback;
 import jakarta.annotation.PostConstruct;
 
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,6 +38,18 @@ public class TerritorioController {
         } catch (Exception e) {
             System.out.println("Nota: " + e.getMessage());
         }
+
+        jdbcTemplate.execute((ConnectionCallback<Void>) connection -> {
+            try (ResultSet columns = connection.getMetaData().getColumns(
+                    connection.getCatalog(), null, "asignaciones_territorio", "salida_id")) {
+                if (!columns.next()) {
+                    try (Statement statement = connection.createStatement()) {
+                        statement.execute("ALTER TABLE asignaciones_territorio ADD COLUMN salida_id BIGINT NULL");
+                    }
+                }
+            }
+            return null;
+        });
     }
 
     @GetMapping("/traer")
