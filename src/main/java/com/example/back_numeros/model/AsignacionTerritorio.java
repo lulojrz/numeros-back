@@ -1,6 +1,7 @@
 package com.example.back_numeros.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -38,4 +39,9 @@ public class AsignacionTerritorio {
 
     @Column(name = "fecha_devolucion")
     private LocalDateTime fechaDevolucion;
+
+    @JsonProperty("esSalida")
+    public boolean isEsSalida() {
+        return salida != null;
+    }
 }
