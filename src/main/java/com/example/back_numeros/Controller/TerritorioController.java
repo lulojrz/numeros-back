@@ -117,7 +117,7 @@ public class TerritorioController {
         boolean assignedToNewUser = nuevoAsignadoId != null && !nuevoAsignadoId.equals(asignadoActualId);
         boolean unassigned = nuevoAsignadoId == null && asignadoActualId != null;
 
-        Optional<AsignacionTerritorio> asignacionAbierta = Optional.empty();
+        Optional<AsignacionTerritorio>  asignacionAbierta = Optional.empty();
         if (unassigned || assignedToNewUser) {
             asignacionAbierta = asignacionRepo.findFirstByTerritorioIdAndFechaDevolucionIsNullOrderByFechaAsignacionDesc(id);
         }
