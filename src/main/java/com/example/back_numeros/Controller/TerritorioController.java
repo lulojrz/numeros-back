@@ -2,6 +2,7 @@ package com.example.back_numeros.Controller;
 
 import com.example.back_numeros.Repository.TerritorioRepository;
 import com.example.back_numeros.Repository.AsignacionTerritorioRepository;
+
 import com.example.back_numeros.model.AsignacionTerritorio;
 import java.time.LocalDateTime;
 import com.example.back_numeros.model.Territorio;
@@ -99,5 +100,11 @@ public class TerritorioController {
             Territorio actualizado = territorioRepository.save(territorio);
             return ResponseEntity.ok(actualizado);
         }).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+
+    @GetMapping("/asignaciones")
+    public List<AsignacionTerritorio> traerAsignaciones() {
+        return asignacionRepo.findAll();
     }
 }

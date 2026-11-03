@@ -1,5 +1,6 @@
 package com.example.back_numeros.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -9,6 +10,7 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "asignaciones_territorio")
+@JsonIgnoreProperties("asignaciones")
 @Getter
 @Setter
 public class AsignacionTerritorio {
