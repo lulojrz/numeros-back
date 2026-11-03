@@ -11,4 +11,5 @@ import java.util.Optional;
 public interface AsignacionTerritorioRepository extends JpaRepository<AsignacionTerritorio, Long> {
     List<AsignacionTerritorio> findByTerritorioIdOrderByFechaAsignacionAsc(Long territorioId);
     Optional<AsignacionTerritorio> findFirstByTerritorioIdAndFechaDevolucionIsNullOrderByFechaAsignacionDesc(Long territorioId);
+    Optional<AsignacionTerritorio> findBySalida_Id(Long salidaId);
 }

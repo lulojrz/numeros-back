@@ -28,6 +28,11 @@ public class AsignacionTerritorio {
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
+    @OneToOne
+    @JoinColumn(name = "salida_id", unique = true)
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private SalidaPredicacion salida;
+
     @Column(name = "fecha_asignacion")
     private LocalDateTime fechaAsignacion;
 
