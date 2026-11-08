@@ -3,6 +3,7 @@ package com.example.back_numeros.Controller;
 import com.example.back_numeros.Repository.AsignacionTerritorioRepository;
 import com.example.back_numeros.Repository.SalidaPredicacionRepository;
 import com.example.back_numeros.Repository.TerritorioRepository;
+import com.example.back_numeros.Config.PaginationRequest;
 import com.example.back_numeros.model.AsignacionTerritorio;
 import com.example.back_numeros.model.SalidaPredicacion;
 import com.example.back_numeros.model.Territorio;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import org.springframework.data.domain.Pageable;
 
 @RestController
 @RequestMapping("/salidas")
@@ -32,8 +34,11 @@ public class SalidaPredicacionController {
     TerritorioRepository territorioRepository;
 
     @GetMapping("/traer")
-    public List<SalidaPredicacion> traerSalidas() {
-        return salidaRepository.findAll();
+    public List<SalidaPredicacion> traerSalidas(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        Pageable pageable = PaginationRequest.bounded(page, size);
+        return salidaRepository.findAll(pageable).getContent();
     }
 
     @PostMapping("/agregar")

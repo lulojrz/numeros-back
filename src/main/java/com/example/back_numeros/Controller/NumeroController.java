@@ -5,12 +5,13 @@ import com.example.back_numeros.Repository.UsuarioRepository;
 import com.example.back_numeros.model.Numero;
 import com.example.back_numeros.model.Usuario;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Pageable;
+import com.example.back_numeros.Config.PaginationRequest;
 
 @RestController
 @RequestMapping("api")
@@ -25,8 +26,11 @@ public class NumeroController {
 UsuarioRepository usuarioRepository;
 
 @GetMapping("/numeros")
-    public List<Numero>  traerNumeros(){
-    return numeroRepository.findAll();
+    public List<Numero> traerNumeros(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+    Pageable pageable = PaginationRequest.bounded(page, size);
+    return numeroRepository.findAll(pageable).getContent();
 }
 
     @PutMapping("/editar/{id}")
@@ -66,12 +70,11 @@ UsuarioRepository usuarioRepository;
 @DeleteMapping("/borrar/{id}")
     public ResponseEntity<?> borrarNumero(@PathVariable Long id){
     Optional<Numero> numero = numeroRepository.findById(id);
-    if (numero!=null){
-    numeroRepository.deleteById(id);
-    return ResponseEntity.ok("Eliminado exitosamente");
-    }else{
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("No se pudo borrar");
+    if (numero.isEmpty()) {
+        return ResponseEntity.notFound().build();
     }
+    numeroRepository.delete(numero.get());
+    return ResponseEntity.ok("Eliminado exitosamente");
 }
 
 @PostMapping("/agregar")

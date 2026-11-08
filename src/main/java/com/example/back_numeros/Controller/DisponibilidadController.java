@@ -1,7 +1,9 @@
 package com.example.back_numeros.Controller;
 
 import com.example.back_numeros.Repository.DisponibilidadRepository;
+import com.example.back_numeros.Config.PaginationRequest;
 import com.example.back_numeros.model.Disponibilidad;
+import org.springframework.data.domain.Pageable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,8 +18,11 @@ public class DisponibilidadController {
     DisponibilidadRepository disponibilidadRepository;
 
     @GetMapping("/traer")
-    public List<Disponibilidad> traerTodas() {
-        return disponibilidadRepository.findAll();
+    public List<Disponibilidad> traerTodas(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        Pageable pageable = PaginationRequest.bounded(page, size);
+        return disponibilidadRepository.findAll(pageable).getContent();
     }
 
     @GetMapping("/usuario/{usuarioId}")

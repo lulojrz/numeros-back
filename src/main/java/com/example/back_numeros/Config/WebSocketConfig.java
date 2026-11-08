@@ -1,6 +1,7 @@
 package com.example.back_numeros.Config;
 
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -11,18 +12,19 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-    @Override
-    public void configureMessageBroker(MessageBrokerRegistry config) {
-        // Configuramos un scheduler para habilitar el Heartbeat
+    @Bean
+    public ThreadPoolTaskScheduler webSocketTaskScheduler() {
         ThreadPoolTaskScheduler taskScheduler = new ThreadPoolTaskScheduler();
         taskScheduler.setPoolSize(1);
         taskScheduler.setThreadNamePrefix("wss-heartbeat-thread-");
-        taskScheduler.initialize();
+        return taskScheduler;
+    }
 
+    @Override
+    public void configureMessageBroker(MessageBrokerRegistry config) {
         config.enableSimpleBroker("/topic")
-                .setHeartbeatValue(new long[]{10000, 10000}) // 10 segundos de latido
-                .setTaskScheduler(taskScheduler);
-                
+                .setHeartbeatValue(new long[]{10000, 10000})
+                .setTaskScheduler(webSocketTaskScheduler());
         config.setApplicationDestinationPrefixes("/app");
     }
 

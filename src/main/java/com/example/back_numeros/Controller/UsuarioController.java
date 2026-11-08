@@ -2,6 +2,8 @@ package com.example.back_numeros.Controller;
 
 
 import com.example.back_numeros.Repository.UsuarioRepository;
+import com.example.back_numeros.Config.LoginAttemptService;
+import com.example.back_numeros.Config.PaginationRequest;
 import com.example.back_numeros.model.Usuario;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -20,6 +22,7 @@ import com.example.back_numeros.model.cambiarContrasenaDTO;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Pageable;
 
 @RestController
 @RequestMapping("usuarios")
@@ -29,31 +32,29 @@ public class UsuarioController {
     UsuarioRepository usuarioRepository;
     @Autowired
     PasswordEncoder passwordEncoder;
+    @Autowired
+    LoginAttemptService loginAttemptService;
 
     @GetMapping()
-    public List<Usuario> traerUsuarios(){
-        return usuarioRepository.findAll();
+    public List<Usuario> traerUsuarios(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        Pageable pageable = PaginationRequest.bounded(page, size);
+        return usuarioRepository.findAll(pageable).getContent();
     }
     @PutMapping("editar/{id}")
-    public Usuario editarUsuario(@RequestBody Usuario usuario_a_editar, @PathVariable Long id ){
-       return  usuarioRepository.findById(id).map(
-                usuario -> {
-
-                        usuario.setPrivilegio(usuario_a_editar.getPrivilegio());
-                        usuario.setBanner(usuario_a_editar.getBanner());
-                        usuario.setAsignacion(usuario_a_editar.getAsignacion());
-                        usuario.setCarrito(usuario_a_editar.getCarrito());
-                        usuario.setTelefono(usuario_a_editar.getTelefono());
-                        usuario.setHabilitacionPublica(usuario_a_editar.getHabilitacionPublica());
-                        usuario.setGrupo(usuario_a_editar.getGrupo());
-                        usuario.setConductor(usuario_a_editar.getConductor());
-
-                return usuarioRepository.save(usuario);
-                }
-
-
-        ).orElse( null);
-
+    public ResponseEntity<?> editarUsuario(@RequestBody Usuario usuario_a_editar, @PathVariable Long id) {
+        return usuarioRepository.findById(id).map(usuario -> {
+            usuario.setPrivilegio(usuario_a_editar.getPrivilegio());
+            usuario.setBanner(usuario_a_editar.getBanner());
+            usuario.setAsignacion(usuario_a_editar.getAsignacion());
+            usuario.setCarrito(usuario_a_editar.getCarrito());
+            usuario.setTelefono(usuario_a_editar.getTelefono());
+            usuario.setHabilitacionPublica(usuario_a_editar.getHabilitacionPublica());
+            usuario.setGrupo(usuario_a_editar.getGrupo());
+            usuario.setConductor(usuario_a_editar.getConductor());
+            return ResponseEntity.ok(usuarioRepository.save(usuario));
+        }).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping("/crear")
@@ -68,69 +69,81 @@ public class UsuarioController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Usuario loginRequest, HttpServletRequest request) {
+        String address = "login:" + request.getRemoteAddr();
+        if (loginAttemptService.isBlocked(address)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .header("Retry-After", "900")
+                    .body("Demasiados intentos. Intente nuevamente más tarde.");
+        }
 
-        Optional<Usuario> encontrado = usuarioRepository.findByUsuario(loginRequest.getUsuario());
+        Optional<Usuario> encontrado = loginRequest == null || loginRequest.getUsuario() == null
+                ? Optional.empty()
+                : usuarioRepository.findByUsuario(loginRequest.getUsuario());
 
-        if (encontrado.isPresent() && passwordEncoder.matches(loginRequest.getContrasena(), encontrado.get().getContrasena())) {
+        if (encontrado.isPresent() && loginRequest.getContrasena() != null
+                && passwordEncoder.matches(loginRequest.getContrasena(), encontrado.get().getContrasena())) {
             Usuario user = encontrado.get();
+            loginAttemptService.clear(address);
 
-            // 1. Creamos la lista de permisos/roles con el formato que tiene tu DB (ej: 'ROLE_ANC')
             SimpleGrantedAuthority authority = new SimpleGrantedAuthority(user.getPrivilegio());
-
-            // 2. Creamos el objeto de autenticación de Spring Security
             Authentication authentication = new UsernamePasswordAuthenticationToken(
                     user.getUsuario(),
                     null,
                     Collections.singletonList(authority)
             );
-
-            // 3. Lo guardamos en el contexto de seguridad
             SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            // 4. Forzamos la creación/actualización de la sesión HTTP para que guarde esta autenticación
             HttpSession session = request.getSession(true);
+            request.changeSessionId();
             session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, SecurityContextHolder.getContext());
 
             return ResponseEntity.ok(user);
         } else {
+            loginAttemptService.recordFailure(address);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciales inválidas");
         }
     }
 
     @PutMapping("cambiar-contrasena")
-    public ResponseEntity<String> cambiarContrasena(@RequestBody cambiarContrasenaDTO datos) {
+    public ResponseEntity<String> cambiarContrasena(
+            @RequestBody cambiarContrasenaDTO datos,
+            HttpServletRequest request) {
+        String address = "password-change:" + request.getRemoteAddr();
+        if (loginAttemptService.isBlocked(address)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .header("Retry-After", "900")
+                    .body("Demasiados intentos. Intente nuevamente más tarde.");
+        }
+        if (datos == null || datos.getUsuario() == null || datos.getContrasenaActual() == null
+                || datos.getNuevaContrasena() == null || datos.getNuevaContrasena().isBlank()) {
+            return ResponseEntity.badRequest().body("Datos inválidos");
+        }
 
-        // 1. Buscar el usuario en la base de datos
         Optional<Usuario> usuarioOptional = usuarioRepository.findByUsuario(datos.getUsuario());
-
-        // CORRECCIÓN CLAVE: El Optional nunca es null, se chequea con .isEmpty()
         if (usuarioOptional.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado");
+            loginAttemptService.recordFailure(address);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciales inválidas");
         }
-
-        // Extraemos el usuario real del envoltorio para trabajar tranquilos
         Usuario usuario = usuarioOptional.get();
-
-        // 2. Validar que la 'contrasenaActual' coincida con la de la BD
         if (!passwordEncoder.matches(datos.getContrasenaActual(), usuario.getContrasena())) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Contraseña actual incorrecta");
+            loginAttemptService.recordFailure(address);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciales inválidas");
         }
 
-        // 3. Encriptar y guardar la nueva contraseña
         usuario.setContrasena(passwordEncoder.encode(datos.getNuevaContrasena()));
-
-        // CORRECCIÓN CLAVE: Ahora le pasamos el objeto 'usuario' (Tipo: Usuario), no el Optional
         usuarioRepository.save(usuario);
+        loginAttemptService.clear(address);
 
         return ResponseEntity.ok("correcto");
     }
 
     @DeleteMapping("borrar/{id}")
-    public Optional<Usuario> borrarUsuario(@PathVariable Long id){
+    public ResponseEntity<?> borrarUsuario(@PathVariable Long id) {
         Optional<Usuario> usuarioEliminado = usuarioRepository.findById(id);
-        usuarioRepository.deleteById(id);
-        return usuarioEliminado;
-
+        if (usuarioEliminado.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        usuarioRepository.delete(usuarioEliminado.get());
+        return ResponseEntity.ok(usuarioEliminado.get());
     }
 
 

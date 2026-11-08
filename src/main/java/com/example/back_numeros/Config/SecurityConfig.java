@@ -1,5 +1,7 @@
 package com.example.back_numeros.Config;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -7,77 +9,63 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
-import org.springframework.core.Ordered;
 
 import java.util.List;
+import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
+    // En Railway configurar: CORS_ORIGINS=https://colegiales.netlify.app
+    // En local configurar: CORS_ORIGINS=http://localhost:5173
+    @Value("${CORS_ORIGINS:https://colegiales.netlify.app}")
+    private String corsOrigins;
+
+    @Autowired
+    private CorsConfigurationSource corsConfigurationSource;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        CookieCsrfTokenRepository csrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        csrfTokenRepository.setCookiePath("/");
+        csrfTokenRepository.setCookieCustomizer(cookie -> cookie.sameSite("None").secure(true));
+
         http
-                // 1. LE AVISAMOS A SPRING SECURITY QUE USE TU CONFIGURACIÓN DE CORS
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
-                // 2. Desactivamos CSRF para poder hacer POST/PUT
-                .csrf(csrf -> csrf.disable())
-
-                // 3. Gestión de sesiones
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(csrfTokenRepository)
+                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
                 .sessionManagement(session -> session
                         .sessionFixation(sessionFixation -> sessionFixation.newSession())
                 )
 
                 .authorizeHttpRequests(auth -> auth
-                        // Permitir preflight CORS
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        
-                        // Públicos (Login y ver números disponibles)
-                        .requestMatchers("/**").permitAll()
-
-                        // Acciones de cualquier usuario AUTENTICADO (incluye anotarse en turnos y ver la semana)
+                        .requestMatchers(HttpMethod.GET, "/csrf", "/territorios/traer").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/usuarios/login").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/usuarios/cambiar-contrasena").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/usuarios/crear").hasAuthority("ROLE_ANC")
+                        .requestMatchers(HttpMethod.PUT, "/usuarios/editar/**").hasAuthority("ROLE_ANC")
+                        .requestMatchers(HttpMethod.DELETE, "/**").hasAuthority("ROLE_ANC")
                         .requestMatchers(
-                                "/api/editar/{id}",
-                                "/usuarios/cambiar-contrasena",
-                                "/usuarios",
-                                "/experiencias/traer",
-                                "/experiencias/agregar",
-                                "/api/turnos/semana",          // <-- Agregado para orden
-                                "/api/turnos/anotarse/{id}",// <-- Agregado para orden,
-                                "/reporte/subir"
-                        ).authenticated()
-
-                        // Exclusivo Administrador Supremo (ANC)
-                        .requestMatchers("/usuarios/borrar/{id}").hasAuthority("ROLE_ANC")
-
-                        // Exclusivo Administradores y Moderadores (ANC, SM)
-                        .requestMatchers(
-                                "/usuarios/crear",
-                                "/api/borrar/{id}",
                                 "/api/agregar",
                                 "/api/turnos/puntos",
-                                "/api/turnos/puntos/{id}",     // <-- Corregido: Agregada la barra "/" inicial
-                                "/api/turnos/generar" ,
+                                "/api/turnos/puntos/{id}",
+                                "/api/turnos/generar",
                                 "/api/turnos/crear",
                                 "/api/turnos/obtener",
-                                "/api/turnos/eliminar/{id}",
                                 "/api/turnos/todos",
                                 "/reporte/traer",
-                                "/experiencias/borrar/{id}",
                                 "/campanas/agregar",
-                                "/campanas/borrar/{id}",
                                 "/campanas/editar/{id}"
-
-                                // <-- Agregado: Ahora protegido para que no lo use cualquiera
                         ).hasAnyAuthority("ROLE_ANC", "ROLE_SM")
-
                         .anyRequest().authenticated()
                 );
 
@@ -90,29 +78,18 @@ public class SecurityConfig {
     }
 
     @Bean
-    public FilterRegistrationBean<CorsFilter> customCorsFilter(CorsConfigurationSource corsConfigurationSource) {
-        FilterRegistrationBean<CorsFilter> bean = new FilterRegistrationBean<>(new CorsFilter(corsConfigurationSource));
-        bean.setOrder(Ordered.HIGHEST_PRECEDENCE);
-        return bean;
-    }
-
-    @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-
-        // Use exact origins to be safe with credentials
-        configuration.setAllowedOrigins(List.of("https://colegiales.netlify.app", "http://localhost:5173", "http://localhost:3000", "http://localhost:8080"));
-        
-        // Allow all necessary methods
+        configuration.setAllowedOrigins(Arrays.stream(corsOrigins.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .toList());
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"));
-
-        // Allow all headers
         configuration.setAllowedHeaders(List.of("*"));
-
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration); // Aplica para todos los endpoints del back
+        source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 }

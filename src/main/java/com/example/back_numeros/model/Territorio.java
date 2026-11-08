@@ -1,6 +1,8 @@
 package com.example.back_numeros.model;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,6 +27,8 @@ public class Territorio {
 
     @ManyToOne
     @JoinColumn(name = "asignado_a_id")
+    @JsonIgnoreProperties({"contrasena", "privilegio", "asignacion", "grupo", "banner", "carrito",
+            "telefono", "habilitacionPublica", "conductor"})
     private Usuario asignadoA;
 
     @Column(name = "ultima_fecha_trabajada")
@@ -39,5 +43,6 @@ public class Territorio {
     private List<Manzana> manzanas;
 
     @OneToMany(mappedBy = "territorio", cascade = CascadeType.ALL)
+    @JsonIgnore
     private List<AsignacionTerritorio> asignaciones;
 }

@@ -1,7 +1,9 @@
 package com.example.back_numeros.Controller;
 
 import com.example.back_numeros.Repository.DepartamentoRepository;
+import com.example.back_numeros.Config.PaginationRequest;
 import com.example.back_numeros.model.Departamento;
+import org.springframework.data.domain.Pageable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,8 +19,11 @@ public class DepartamentoController {
     DepartamentoRepository departamentoRepository;
 
     @GetMapping("/traer")
-    public List<Departamento> traerDepartamentos() {
-        return departamentoRepository.findAll();
+    public List<Departamento> traerDepartamentos(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        Pageable pageable = PaginationRequest.bounded(page, size);
+        return departamentoRepository.findAll(pageable).getContent();
     }
 
     @GetMapping("/revisitas/{publicadorId}")

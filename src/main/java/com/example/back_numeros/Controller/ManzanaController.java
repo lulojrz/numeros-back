@@ -1,7 +1,9 @@
 package com.example.back_numeros.Controller;
 
 import com.example.back_numeros.Repository.ManzanaRepository;
+import com.example.back_numeros.Config.PaginationRequest;
 import com.example.back_numeros.model.Manzana;
+import org.springframework.data.domain.Pageable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,8 +19,11 @@ public class ManzanaController {
     ManzanaRepository manzanaRepository;
 
     @GetMapping("/traer")
-    public List<Manzana> traerManzanas() {
-        return manzanaRepository.findAll();
+    public List<Manzana> traerManzanas(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        Pageable pageable = PaginationRequest.bounded(page, size);
+        return manzanaRepository.findAll(pageable).getContent();
     }
 
     @PostMapping("/agregar")

@@ -3,6 +3,7 @@ package com.example.back_numeros.Controller;
 import com.example.back_numeros.Repository.TerritorioRepository;
 import com.example.back_numeros.Repository.AsignacionTerritorioRepository;
 import com.example.back_numeros.Repository.SalidaPredicacionRepository;
+import com.example.back_numeros.Config.PaginationRequest;
 
 import com.example.back_numeros.model.AsignacionTerritorio;
 import com.example.back_numeros.model.SalidaPredicacion;
@@ -14,19 +15,19 @@ import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.ConnectionCallback;
 import jakarta.annotation.PostConstruct;
 
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.List;
 import java.util.Optional;
 import java.time.LocalTime;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @RestController
 @RequestMapping("/territorios")
 public class TerritorioController {
+
+    private static final int MAX_IMAGE_LENGTH = 7_000_000;
 
     @Autowired
     TerritorioRepository territorioRepository;
@@ -37,59 +38,49 @@ public class TerritorioController {
     @Autowired
     SalidaPredicacionRepository salidaRepo;
 
-    @Autowired
-    JdbcTemplate jdbcTemplate;
-
     @PostConstruct
     public void init() {
-        try {
-            jdbcTemplate.execute("ALTER TABLE territorios MODIFY COLUMN imagen LONGTEXT");
-        } catch (Exception e) {
-            System.out.println("Nota: " + e.getMessage());
-        }
-
-        jdbcTemplate.execute((ConnectionCallback<Void>) connection -> {
-            try (ResultSet columns = connection.getMetaData().getColumns(
-                    connection.getCatalog(), null, "asignaciones_territorio", "salida_id")) {
-                if (!columns.next()) {
-                    try (Statement statement = connection.createStatement()) {
-                        statement.execute("ALTER TABLE asignaciones_territorio ADD COLUMN salida_id BIGINT NULL");
-                    }
-                }
-            }
-            return null;
-        });
-
         registrarAsignacionesDeSalidasExistentes();
     }
 
     private void registrarAsignacionesDeSalidasExistentes() {
-        for (SalidaPredicacion salida : salidaRepo.findAll()) {
-            if (salida.getTerritorio() == null || salida.getConductor() == null ||
-                    salida.getFecha() == null || salida.getHora() == null ||
-                    asignacionRepo.existsBySalida_Id(salida.getId())) {
-                continue;
-            }
+        int page = 0;
+        Page<SalidaPredicacion> salidas;
+        do {
+            salidas = salidaRepo.findAll(Pageable.ofSize(100).withPage(page++));
+            for (SalidaPredicacion salida : salidas.getContent()) {
+                if (salida.getTerritorio() == null || salida.getConductor() == null ||
+                        salida.getFecha() == null || salida.getHora() == null ||
+                        asignacionRepo.existsBySalida_Id(salida.getId())) {
+                    continue;
+                }
 
-            AsignacionTerritorio asignacion = new AsignacionTerritorio();
-            asignacion.setTerritorio(salida.getTerritorio());
-            asignacion.setUsuario(salida.getConductor());
-            asignacion.setSalida(salida);
-            asignacion.setFechaAsignacion(salida.getFecha().atTime(salida.getHora()));
-            asignacion.setFechaDevolucion(salida.getFecha().atTime(LocalTime.of(23, 59, 59)));
-            asignacionRepo.save(asignacion);
-        }
+                AsignacionTerritorio asignacion = new AsignacionTerritorio();
+                asignacion.setTerritorio(salida.getTerritorio());
+                asignacion.setUsuario(salida.getConductor());
+                asignacion.setSalida(salida);
+                asignacion.setFechaAsignacion(salida.getFecha().atTime(salida.getHora()));
+                asignacion.setFechaDevolucion(salida.getFecha().atTime(LocalTime.of(23, 59, 59)));
+                asignacionRepo.save(asignacion);
+            }
+        } while (salidas.hasNext());
     }
 
     @GetMapping("/traer")
-    public List<Territorio> traerTerritorios() {
-        return territorioRepository.findAll();
+    public List<Territorio> traerTerritorios(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PaginationRequest.bounded(page, size, 10);
+        return territorioRepository.findAll(pageable).getContent();
     }
 
     @PostMapping("/agregar")
     public ResponseEntity<?> agregarTerritorio(@RequestBody Territorio territorio) {
         if (territorio == null) {
             return ResponseEntity.badRequest().body("El territorio no puede ser nulo");
+        }
+        if (imagenDemasiadoGrande(territorio)) {
+            return ResponseEntity.status(413).body("La imagen supera el tamaño permitido.");
         }
         Territorio guardado = territorioRepository.save(territorio);
         return ResponseEntity.ok(guardado);
@@ -108,6 +99,12 @@ public class TerritorioController {
     @PutMapping("/editar/{id}")
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public ResponseEntity<?> editarTerritorio(@PathVariable Long id, @RequestBody Territorio territorioActualizado) {
+        if (territorioActualizado == null) {
+            return ResponseEntity.badRequest().body("El territorio no puede ser nulo");
+        }
+        if (imagenDemasiadoGrande(territorioActualizado)) {
+            return ResponseEntity.status(413).body("La imagen supera el tamaño permitido.");
+        }
         Optional<Territorio> territorioEncontrado = territorioRepository.findByIdForUpdate(id);
         if (territorioEncontrado.isEmpty()) return ResponseEntity.notFound().build();
 
@@ -157,9 +154,15 @@ public class TerritorioController {
         return ResponseEntity.ok(territorioRepository.save(territorio));
     }
 
+    private boolean imagenDemasiadoGrande(Territorio territorio) {
+        return territorio.getImagen() != null && territorio.getImagen().length() > MAX_IMAGE_LENGTH;
+    }
 
     @GetMapping("/asignaciones")
-    public List<AsignacionTerritorio> traerAsignaciones() {
-        return asignacionRepo.findAll();
+    public List<AsignacionTerritorio> traerAsignaciones(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        Pageable pageable = PaginationRequest.bounded(page, size);
+        return asignacionRepo.findAll(pageable).getContent();
     }
 }

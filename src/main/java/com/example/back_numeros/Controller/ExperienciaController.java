@@ -1,6 +1,7 @@
 package com.example.back_numeros.Controller;
 
 import com.example.back_numeros.Repository.ExperienciaRepository;
+import com.example.back_numeros.Config.PaginationRequest;
 
 import com.example.back_numeros.Repository.UsuarioRepository;
 import com.example.back_numeros.model.Experiencia;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Pageable;
 
 @RestController
 @RequestMapping("/experiencias")
@@ -35,8 +37,11 @@ public class ExperienciaController {
 
 
     @GetMapping("/traer")
-    public List<Experiencia> traerExperiencias(){
-        return experienciaRepository.findAll();
+    public List<Experiencia> traerExperiencias(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        Pageable pageable = PaginationRequest.bounded(page, size);
+        return experienciaRepository.findAll(pageable).getContent();
 
     }
     @PostMapping("/agregar")

@@ -5,6 +5,7 @@ import com.example.back_numeros.Repository.PlantillaTurnoRepository;
 import com.example.back_numeros.Repository.PuntoPredicacionRepository;
 import com.example.back_numeros.Repository.TurnoRepository;
 import com.example.back_numeros.Repository.UsuarioRepository;
+import com.example.back_numeros.Config.PaginationRequest;
 import com.example.back_numeros.model.PlantillaTurno;
 import com.example.back_numeros.model.PuntoPredicacion;
 import com.example.back_numeros.model.Turno;
@@ -14,9 +15,13 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,8 +44,11 @@ public class TurnoController {
     private SimpMessagingTemplate messagingTemplate;
 
     @GetMapping("/puntos")
-    public List<PuntoPredicacion> obtenerPuntos(){
-        return puntoPredicacionRepository.findAll();
+    public List<PuntoPredicacion> obtenerPuntos(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        Pageable pageable = PaginationRequest.bounded(page, size);
+        return puntoPredicacionRepository.findAll(pageable).getContent();
     }
     @PostMapping("/puntos")
     public PuntoPredicacion agregarPunto(@RequestBody PuntoPredicacion puntoPredicacion){
@@ -74,7 +82,12 @@ public class TurnoController {
     }
 
     @GetMapping("/obtener")
-    public List<PlantillaTurno> obtenerTurnos(){return plantillaTurnoRepository.findAll();}
+    public List<PlantillaTurno> obtenerTurnos(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        Pageable pageable = PaginationRequest.bounded(page, size);
+        return plantillaTurnoRepository.findAll(pageable).getContent();
+    }
     @DeleteMapping("/eliminar/{id}")
     public ResponseEntity<String> borrarTurno(@PathVariable Long id) {
         if (!plantillaTurnoRepository.existsById(id)) {
@@ -108,7 +121,13 @@ public class TurnoController {
             return ResponseEntity.badRequest().body("La fecha enviada debe ser un Lunes.");
         }
 
-        List<PlantillaTurno> plantillas = plantillaTurnoRepository.findAll();
+        List<PlantillaTurno> plantillas = new ArrayList<>();
+        int page = 0;
+        Page<PlantillaTurno> plantillaPage;
+        do {
+            plantillaPage = plantillaTurnoRepository.findAll(Pageable.ofSize(100).withPage(page++));
+            plantillas.addAll(plantillaPage.getContent());
+        } while (plantillaPage.hasNext());
         if (plantillas.isEmpty()) {
             return ResponseEntity.badRequest().body("No hay horarios configurados en la plantilla.");
         }
@@ -145,14 +164,14 @@ public class TurnoController {
     @PutMapping("/anotarse/{id}")
     public ResponseEntity<?> anotarseEnTurno(
             @PathVariable Long id,
-            @RequestParam String usuario) {
+            Authentication authentication) {
 
         Optional<Turno> turnoOpt = turnoRepository.findById(id);
         if (turnoOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
-        Optional<Usuario> usuarioOpt = usuarioRepository.findByUsuario(usuario);
+        Optional<Usuario> usuarioOpt = usuarioRepository.findByUsuario(authentication.getName());
         if (usuarioOpt.isEmpty()) {
             return ResponseEntity.badRequest().body("El usuario especificado no existe.");
         }
@@ -190,26 +209,34 @@ public class TurnoController {
 
     // TRAER TURNOS POR USUARIO
     @GetMapping("/usuario/{usuario}")
-    public List<Turno> encontrarTurnos(@PathVariable String usuario) {
+    public List<Turno> encontrarTurnos(
+            @PathVariable String usuario,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
         // Le pasamos 'usuario' dos veces: una para publicador1 y otra para publicador2
-        return turnoRepository.findByPublicador1_UsuarioOrPublicador2_Usuario(usuario, usuario);
+        Pageable pageable = PaginationRequest.bounded(page, size);
+        return turnoRepository.findByPublicador1_UsuarioOrPublicador2_Usuario(usuario, usuario, pageable)
+                .getContent();
     }
     //TRAER TODOS LOS TURNOS
     @GetMapping("/todos")
-    public List<Turno> traerTurnosPorAno(@RequestParam(required = false) String year){
+    public ResponseEntity<?> traerTurnosPorAno(
+            @RequestParam(required = false) String year,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        Pageable pageable = PaginationRequest.bounded(page, size);
         if (year != null && !year.isEmpty()) {
+            final int y;
             try {
-                int y = Integer.parseInt(year);
-                // Año de servicio: 1 de Septiembre (y - 1) al 31 de Agosto (y) inclusive
-                java.time.LocalDate inicio = java.time.LocalDate.of(y - 1, 9, 1);
-                java.time.LocalDate fin = java.time.LocalDate.of(y, 8, 31);
-                // Usamos el método que ya tenías y que sí es compatible con LocalDate
-                return turnoRepository.findByFechaBetweenOrderByFechaAscHoraInicioAsc(inicio, fin);
-            } catch (Exception e) {
-                return turnoRepository.findAll();
+                y = Integer.parseInt(year);
+            } catch (NumberFormatException e) {
+                return ResponseEntity.badRequest().body("El año debe ser numérico.");
             }
+            LocalDate inicio = LocalDate.of(y - 1, 9, 1);
+            LocalDate fin = LocalDate.of(y, 8, 31);
+            return ResponseEntity.ok(turnoRepository
+                    .findByFechaBetweenOrderByFechaAscHoraInicioAsc(inicio, fin, pageable).getContent());
         }
-        // Por defecto (por si acaso) devuelve todos
-        return turnoRepository.findAll();
+        return ResponseEntity.ok(turnoRepository.findAll(pageable).getContent());
     }
 }

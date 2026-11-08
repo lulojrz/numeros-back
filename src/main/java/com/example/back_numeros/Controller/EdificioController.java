@@ -1,7 +1,9 @@
 package com.example.back_numeros.Controller;
 
 import com.example.back_numeros.Repository.EdificioRepository;
+import com.example.back_numeros.Config.PaginationRequest;
 import com.example.back_numeros.model.Edificio;
+import org.springframework.data.domain.Pageable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,8 +19,11 @@ public class EdificioController {
     EdificioRepository edificioRepository;
 
     @GetMapping("/traer")
-    public List<Edificio> traerEdificios() {
-        return edificioRepository.findAll();
+    public List<Edificio> traerEdificios(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        Pageable pageable = PaginationRequest.bounded(page, size);
+        return edificioRepository.findAll(pageable).getContent();
     }
 
     @PostMapping("/agregar")
