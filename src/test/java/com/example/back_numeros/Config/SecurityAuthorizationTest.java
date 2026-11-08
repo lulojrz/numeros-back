@@ -7,11 +7,15 @@ import com.example.back_numeros.Repository.UsuarioRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.context.WebApplicationContext;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -34,6 +38,9 @@ class SecurityAuthorizationTest {
     private WebApplicationContext context;
 
     @Autowired
+    private FilterRegistrationBean<CorsFilter> corsFilterRegistration;
+
+    @Autowired
     private TerritorioRepository territorioRepository;
 
     @Autowired
@@ -50,6 +57,27 @@ class SecurityAuthorizationTest {
     void territoryListIsPublic() throws Exception {
         mockMvc.perform(get("/territorios/traer"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void productionFrontendCanMakeLoginCorsPreflight() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("OPTIONS", "/usuarios/login");
+        request.addHeader("Origin", "https://colegiales.netlify.app");
+        request.addHeader("Access-Control-Request-Method", "POST");
+        request.addHeader("Access-Control-Request-Headers", "content-type,x-xsrf-token");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        corsFilterRegistration.getFilter().doFilter(request, response, (req, res) -> {
+            throw new AssertionError("CORS preflight should end in the CORS filter");
+        });
+
+        org.junit.jupiter.api.Assertions.assertEquals(200, response.getStatus());
+        org.junit.jupiter.api.Assertions.assertEquals(
+                "https://colegiales.netlify.app",
+                response.getHeader("Access-Control-Allow-Origin"));
+        org.junit.jupiter.api.Assertions.assertEquals(
+                "true",
+                response.getHeader("Access-Control-Allow-Credentials"));
     }
 
     @Test
