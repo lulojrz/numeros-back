@@ -25,8 +25,15 @@ public class AsignacionTerritorio {
     @com.fasterxml.jackson.annotation.JsonIgnore
     private Territorio territorio;
 
+    @JsonProperty("territorioId")
+    public Long getTerritorioId() {
+        return territorio == null ? null : territorio.getId();
+    }
+
     @ManyToOne
     @JoinColumn(name = "usuario_id", nullable = false)
+    @JsonIgnoreProperties({"contrasena", "privilegio", "asignacion", "grupo", "banner", "carrito",
+            "telefono", "habilitacionPublica", "conductor"})
     private Usuario usuario;
 
     @OneToOne
