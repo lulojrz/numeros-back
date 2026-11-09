@@ -60,7 +60,7 @@ public class TerritorioController {
                 asignacion.setUsuario(salida.getConductor());
                 asignacion.setSalida(salida);
                 asignacion.setFechaAsignacion(salida.getFecha().atTime(salida.getHora()));
-                asignacion.setFechaDevolucion(salida.getFecha().atTime(LocalTime.of(23, 59, 59)));
+                asignacion.setFechaDevolucion((salida.getFecha().atTime(salida.getHora())));
                 asignacionRepo.save(asignacion);
             }
         } while (salidas.hasNext());
