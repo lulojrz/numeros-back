@@ -108,6 +108,16 @@ class SecurityAuthorizationTest {
     void otherDataEndpointsStillRequireAuthentication() throws Exception {
         mockMvc.perform(get("/api/numeros"))
                 .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/asignaciones"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void assignmentExportPathWorksForAuthenticatedUsers() throws Exception {
+        mockMvc.perform(get("/asignaciones")
+                        .with(user("regular").authorities(() -> "ROLE_USER")))
+                .andExpect(status().isOk());
     }
 
     @Test
