@@ -1,5 +1,7 @@
 package com.example.back_numeros.Config;
 
+import com.example.back_numeros.Repository.UsuarioRepository;
+import com.example.back_numeros.model.Usuario;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -7,10 +9,14 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.http.HttpMethod;
 import org.springframework.core.Ordered;
+import org.springframework.security.authorization.AuthorizationDecision;
+import org.springframework.security.authorization.AuthorizationManager;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
@@ -21,6 +27,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 import java.util.Arrays;
+import java.util.Locale;
+import java.text.Normalizer;
+import java.util.Set;
 import java.util.stream.Stream;
 
 @Configuration
@@ -33,10 +42,14 @@ public class SecurityConfig {
     // En local configurar: CORS_ORIGINS=http://localhost:5173
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, UsuarioRepository usuarioRepository) throws Exception {
         CookieCsrfTokenRepository csrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
         csrfTokenRepository.setCookiePath("/");
         csrfTokenRepository.setCookieCustomizer(cookie -> cookie.sameSite("None").secure(true));
+        AuthorizationManager<RequestAuthorizationContext> ancOrSupport =
+                usuarioAccess(usuarioRepository, Set.of("ROLE_ANC"));
+        AuthorizationManager<RequestAuthorizationContext> ancSmOrSupport =
+                usuarioAccess(usuarioRepository, Set.of("ROLE_ANC", "ROLE_SM"));
 
         http
                 .csrf(csrf -> csrf
@@ -58,9 +71,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/csrf", "/territorios/traer").permitAll()
                         .requestMatchers(HttpMethod.POST, "/usuarios/login").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/usuarios/cambiar-contrasena").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/usuarios/crear").hasAuthority("ROLE_ANC")
-                        .requestMatchers(HttpMethod.PUT, "/usuarios/editar/**").hasAuthority("ROLE_ANC")
-                        .requestMatchers(HttpMethod.DELETE, "/**").hasAuthority("ROLE_ANC")
+                        .requestMatchers(HttpMethod.POST, "/usuarios/crear").access(ancOrSupport)
+                        .requestMatchers(HttpMethod.PUT, "/usuarios/editar/**").access(ancOrSupport)
+                        .requestMatchers(HttpMethod.DELETE, "/**").access(ancOrSupport)
                         .requestMatchers(
                                 "/api/agregar",
                                 "/api/turnos/puntos",
@@ -72,11 +85,37 @@ public class SecurityConfig {
                                 "/reporte/traer",
                                 "/campanas/agregar",
                                 "/campanas/editar/{id}"
-                        ).hasAnyAuthority("ROLE_ANC", "ROLE_SM")
+                        ).access(ancSmOrSupport)
                         .anyRequest().authenticated()
                 );
 
         return http.build();
+    }
+
+    private AuthorizationManager<RequestAuthorizationContext> usuarioAccess(
+            UsuarioRepository usuarioRepository, Set<String> privilegiosPermitidos) {
+        return (authentication, context) -> {
+            Authentication currentUser = authentication.get();
+            if (currentUser == null || !currentUser.isAuthenticated()) {
+                return new AuthorizationDecision(false);
+            }
+
+            boolean autorizado = usuarioRepository.findByUsuario(currentUser.getName())
+                    .map(usuario -> privilegiosPermitidos.contains(usuario.getPrivilegio())
+                            || esSoporte(usuario))
+                    .orElse(false);
+            return new AuthorizationDecision(autorizado);
+        };
+    }
+
+    private boolean esSoporte(Usuario usuario) {
+        String asignacion = usuario.getAsignacion();
+        if (asignacion == null) return false;
+        String normalizada = Normalizer.normalize(asignacion, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "")
+                .trim()
+                .toLowerCase(Locale.ROOT);
+        return normalizada.equals("soporte");
     }
 
     @Bean

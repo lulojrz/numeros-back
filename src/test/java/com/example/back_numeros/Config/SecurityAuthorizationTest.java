@@ -167,17 +167,86 @@ class SecurityAuthorizationTest {
 
     @Test
     void ancCanCreateUsers() throws Exception {
+        String adminUsername = "admin-" + java.util.UUID.randomUUID();
+        Usuario admin = new Usuario();
+        admin.setUsuario(adminUsername);
+        admin.setPrivilegio("ROLE_ANC");
+        usuarioRepository.save(admin);
+
         mockMvc.perform(post("/usuarios/crear")
-                        .with(user("admin").authorities(() -> "ROLE_ANC"))
+                        .with(user(adminUsername).authorities(() -> "ROLE_ANC"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"usuario\":\"csrf-check\"}"))
                 .andExpect(status().isForbidden());
 
         mockMvc.perform(post("/usuarios/crear")
-                        .with(user("admin").authorities(() -> "ROLE_ANC"))
+                        .with(user(adminUsername).authorities(() -> "ROLE_ANC"))
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"usuario\":\"admin-created\",\"contrasena\":\"test-password\",\"privilegio\":\"ROLE_USER\"}"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void supportAssignmentGrantsAdministrativeActionsRegardlessOfRole() throws Exception {
+        String supportUsername = "support-" + java.util.UUID.randomUUID();
+        Usuario support = new Usuario();
+        support.setUsuario(supportUsername);
+        support.setPrivilegio("ROLE_PUB");
+        support.setAsignacion("Soporte");
+        usuarioRepository.save(support);
+
+        mockMvc.perform(post("/usuarios/crear")
+                        .with(user(supportUsername).authorities(() -> "ROLE_PUB"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"usuario\":\"support-created\",\"contrasena\":\"test-password\",\"privilegio\":\"ROLE_USER\"}"))
+                .andExpect(status().isOk());
+
+        support.setAsignacion("");
+        usuarioRepository.save(support);
+
+        mockMvc.perform(post("/usuarios/crear")
+                        .with(user(supportUsername).authorities(() -> "ROLE_PUB"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"usuario\":\"support-revoked\",\"contrasena\":\"test-password\",\"privilegio\":\"ROLE_USER\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void editingUserPersistsProfileFieldsAndRejectsDuplicateUsernames() throws Exception {
+        String adminUsername = "admin-edit-" + java.util.UUID.randomUUID();
+        Usuario admin = new Usuario();
+        admin.setUsuario(adminUsername);
+        admin.setPrivilegio("ROLE_ANC");
+        usuarioRepository.save(admin);
+
+        Usuario target = new Usuario();
+        target.setUsuario("target-" + java.util.UUID.randomUUID());
+        target.setPrivilegio("ROLE_PUB");
+        target.setGrupo("Grupo 1");
+        target = usuarioRepository.save(target);
+
+        mockMvc.perform(put("/usuarios/editar/" + target.getId())
+                        .with(user(adminUsername).authorities(() -> "ROLE_ANC"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nombre\":\"Nombre actualizado\",\"apellido\":\"Apellido actualizado\",\"usuario\":\"cuenta-actualizada\",\"telefono\":\"5551234\",\"privilegio\":\"ROLE_PUB\",\"asignacion\":\"\",\"grupo\":\"Grupo 4\",\"carrito\":true,\"banner\":false,\"habilitacionPublica\":false,\"conductor\":false}"))
+                .andExpect(status().isOk());
+
+        Usuario updated = usuarioRepository.findById(target.getId()).orElseThrow();
+        org.junit.jupiter.api.Assertions.assertEquals("Nombre actualizado", updated.getNombre());
+        org.junit.jupiter.api.Assertions.assertEquals("Apellido actualizado", updated.getApellido());
+        org.junit.jupiter.api.Assertions.assertEquals("cuenta-actualizada", updated.getUsuario());
+        org.junit.jupiter.api.Assertions.assertEquals("Grupo 4", updated.getGrupo());
+        org.junit.jupiter.api.Assertions.assertTrue(updated.getCarrito());
+
+        mockMvc.perform(put("/usuarios/editar/" + target.getId())
+                        .with(user(adminUsername).authorities(() -> "ROLE_ANC"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"usuario\":\"" + adminUsername + "\",\"privilegio\":\"ROLE_PUB\"}"))
+                .andExpect(status().isConflict());
     }
 }
