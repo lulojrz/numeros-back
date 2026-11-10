@@ -43,6 +43,17 @@ public class UsuarioController {
         Pageable pageable = PaginationRequest.bounded(page, size);
         return usuarioRepository.findAll(pageable).getContent();
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<Usuario> traerUsuarioActual(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return usuarioRepository.findByUsuario(authentication.getName())
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
+    }
+
     @PutMapping("editar/{id}")
     public ResponseEntity<?> editarUsuario(
             @RequestBody Usuario usuario_a_editar,

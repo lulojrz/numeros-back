@@ -107,10 +107,33 @@ class SecurityAuthorizationTest {
     @Test
     void otherDataEndpointsStillRequireAuthentication() throws Exception {
         mockMvc.perform(get("/api/numeros"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         mockMvc.perform(get("/asignaciones"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void currentUserEndpointValidatesTheSessionAndReturnsOnlyTheCurrentUser() throws Exception {
+        mockMvc.perform(get("/usuarios/me"))
+                .andExpect(status().isUnauthorized());
+
+        String username = "session-" + java.util.UUID.randomUUID();
+        Usuario usuario = new Usuario();
+        usuario.setUsuario(username);
+        usuario.setPrivilegio("ROLE_PUB");
+        usuario.setAsignacion("telefonica");
+        usuarioRepository.save(usuario);
+
+        String response = mockMvc.perform(get("/usuarios/me")
+                        .with(user(username).authorities(() -> "ROLE_PUB")))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        assertTrue(response.contains(username));
+        assertTrue(response.contains("telefonica"));
     }
 
     @Test
