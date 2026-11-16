@@ -4,9 +4,11 @@ import com.example.back_numeros.Repository.AsignacionTerritorioRepository;
 import com.example.back_numeros.Repository.SalidaPredicacionRepository;
 import com.example.back_numeros.Repository.TerritorioRepository;
 import com.example.back_numeros.Config.PaginationRequest;
+import com.example.back_numeros.Repository.UsuarioRepository;
 import com.example.back_numeros.model.AsignacionTerritorio;
 import com.example.back_numeros.model.SalidaPredicacion;
 import com.example.back_numeros.model.Territorio;
+import com.example.back_numeros.model.Usuario;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +21,7 @@ import java.util.Optional;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/salidas")
@@ -32,6 +35,8 @@ public class SalidaPredicacionController {
 
     @Autowired
     TerritorioRepository territorioRepository;
+    @Autowired
+    UsuarioRepository usuarioRepository;
 
     @GetMapping("/traer")
     public List<SalidaPredicacion> traerSalidas(
@@ -44,31 +49,47 @@ public class SalidaPredicacionController {
     @PostMapping("/agregar")
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public ResponseEntity<?> agregarSalida(@RequestBody SalidaPredicacion salida) {
-        if (salida == null || salida.getFecha() == null || salida.getHora() == null || salida.getConductor() == null) {
-            return ResponseEntity.badRequest().build();
+        if (salida == null || salida.getFecha() == null || salida.getHora() == null
+                || salida.getConductor() == null || salida.getConductor().getId() == null) {
+            return ResponseEntity.badRequest().body("Datos de la salida o conductor inválidos.");
         }
+
+        // 1. Cargar la entidad real del conductor desde la BD
+        Usuario conductorReal = usuarioRepository.findById(salida.getConductor().getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Conductor no encontrado."));
+        salida.setConductor(conductorReal);
 
         Territorio territorio = null;
         if (salida.getTerritorio() != null) {
             Long territorioId = salida.getTerritorio().getId();
-            if (territorioId == null || salida.getConductor().getId() == null) {
-                return ResponseEntity.badRequest().body("El territorio y el conductor deben ser válidos.");
+            if (territorioId == null) {
+                return ResponseEntity.badRequest().body("El ID del territorio es obligatorio.");
             }
 
             Optional<Territorio> territorioEncontrado = territorioRepository.findByIdForUpdate(territorioId);
             if (territorioEncontrado.isEmpty()) return ResponseEntity.notFound().build();
+
             territorio = territorioEncontrado.get();
 
             LocalDateTime inicio = salida.getFecha().atTime(salida.getHora());
             LocalDateTime fin = salida.getFecha().atTime(LocalTime.MAX);
-            if (tieneConflicto(territorio, territorioId, salida.getConductor().getId(), inicio, fin, null)) {
+            if (tieneConflicto(territorio, territorioId, conductorReal.getId(), inicio, fin, null)) {
                 return conflictoTerritorio();
             }
+
+            // 2. Actualizar directamente la instancia ya obtenida y guardar la entidad (no el Optional)
+            territorio.setAsignadoA(conductorReal);
+            territorio = territorioRepository.save(territorio);
             salida.setTerritorio(territorio);
         }
 
         SalidaPredicacion salidaGuardada = salidaRepository.save(salida);
-        registrarAsignacionTerritorio(salidaGuardada, territorio);
+
+        // 3. Registrar asignación solo si hubo un territorio seleccionado
+        if (territorio != null) {
+            registrarAsignacionTerritorio(salidaGuardada, territorio);
+        }
+
         return ResponseEntity.ok(salidaGuardada);
     }
 
@@ -161,6 +182,7 @@ public class SalidaPredicacionController {
 
     private void registrarAsignacionTerritorio(SalidaPredicacion salida, Territorio territorio) {
         if (territorio == null) return;
+
 
         AsignacionTerritorio asignacion = new AsignacionTerritorio();
         asignacion.setTerritorio(territorio);

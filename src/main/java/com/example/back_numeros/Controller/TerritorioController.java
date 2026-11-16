@@ -100,7 +100,7 @@ public class TerritorioController {
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public ResponseEntity<?> editarTerritorio(@PathVariable Long id, @RequestBody Territorio territorioActualizado) {
         if (territorioActualizado == null) {
-            return ResponseEntity.badRequest().body("El territorio no puede ser nulo");
+            return ResponseEntity.badRequest().body("La edicion no puede ser vacia");
         }
         if (imagenDemasiadoGrande(territorioActualizado)) {
             return ResponseEntity.status(413).body("La imagen supera el tamaño permitido.");
@@ -144,9 +144,6 @@ public class TerritorioController {
             nuevaAsignacion.setFechaAsignacion(ahora);
             asignacionRepo.save(nuevaAsignacion);
         }
-
-        territorio.setNumero(territorioActualizado.getNumero());
-        territorio.setImagen(territorioActualizado.getImagen());
         territorio.setAsignadoA(territorioActualizado.getAsignadoA());
         territorio.setUltimaFechaTrabajada(territorioActualizado.getUltimaFechaTrabajada());
         territorio.setFechasTrabajado(territorioActualizado.getFechasTrabajado());
