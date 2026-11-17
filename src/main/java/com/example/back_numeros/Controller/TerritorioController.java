@@ -5,11 +5,15 @@ import com.example.back_numeros.Repository.AsignacionTerritorioRepository;
 import com.example.back_numeros.Repository.SalidaPredicacionRepository;
 import com.example.back_numeros.Config.PaginationRequest;
 
+import com.example.back_numeros.Supabase.SupabaseStorageService;
 import com.example.back_numeros.model.AsignacionTerritorio;
 import com.example.back_numeros.model.SalidaPredicacion;
+
+import java.io.IOException;
 import java.time.LocalDateTime;
 import com.example.back_numeros.model.Territorio;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Isolation;
@@ -17,17 +21,21 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import jakarta.annotation.PostConstruct;
 
+import tools.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Optional;
 import java.time.LocalTime;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/territorios")
 public class TerritorioController {
 
     private static final int MAX_IMAGE_LENGTH = 7_000_000;
+
+    private final SupabaseStorageService storageService;
 
     @Autowired
     TerritorioRepository territorioRepository;
@@ -37,6 +45,12 @@ public class TerritorioController {
 
     @Autowired
     SalidaPredicacionRepository salidaRepo;
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    public TerritorioController(SupabaseStorageService storageService) {
+        this.storageService = storageService;
+    }
 
     @PostConstruct
     public void init() {
@@ -74,16 +88,30 @@ public class TerritorioController {
         return territorioRepository.findAll(pageable).getContent();
     }
 
-    @PostMapping("/agregar")
-    public ResponseEntity<?> agregarTerritorio(@RequestBody Territorio territorio) {
-        if (territorio == null) {
-            return ResponseEntity.badRequest().body("El territorio no puede ser nulo");
+
+
+    @PostMapping(value = "/agregar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> agregarTerritorio(
+            @RequestParam("territorio") String territorioJson,
+            @RequestPart(value = "imagen", required = false) MultipartFile imagen) {
+        try {
+            if (territorioJson == null || territorioJson.isBlank()) {
+                return ResponseEntity.badRequest().body("El territorio no puede ser nulo");
+            }
+
+            Territorio territorio = objectMapper.readValue(territorioJson, Territorio.class);
+
+            if (imagen != null && !imagen.isEmpty()) {
+                String imagenUrl = storageService.subirImagen(imagen, territorio.getNumero());
+                territorio.setImagen(imagenUrl);
+            }
+
+            Territorio guardado = territorioRepository.save(territorio);
+            return ResponseEntity.ok(guardado);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al crear el territorio: " + e.getMessage());
         }
-        if (imagenDemasiadoGrande(territorio)) {
-            return ResponseEntity.status(413).body("La imagen supera el tamaño permitido.");
-        }
-        Territorio guardado = territorioRepository.save(territorio);
-        return ResponseEntity.ok(guardado);
     }
 
     @DeleteMapping("/borrar/{id}")
