@@ -83,8 +83,8 @@ public class TerritorioController {
     @GetMapping("/traer")
     public List<Territorio> traerTerritorios(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        Pageable pageable = PaginationRequest.bounded(page, size, 10);
+            @RequestParam(defaultValue = "100") int size) {
+        Pageable pageable = PaginationRequest.bounded(page, size, 100);
         return territorioRepository.findAll(pageable).getContent();
     }
 
