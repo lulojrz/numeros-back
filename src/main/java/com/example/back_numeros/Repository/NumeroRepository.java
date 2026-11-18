@@ -1,12 +1,35 @@
 package com.example.back_numeros.Repository;
 
 import com.example.back_numeros.model.Numero;
-
+import com.example.back_numeros.model.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Repository
-public interface NumeroRepository extends JpaRepository<Numero,Long> {
+public interface NumeroRepository extends JpaRepository<Numero, Long>, JpaSpecificationExecutor<Numero> {
 
+    @Modifying
+    @Transactional
+    @Query("UPDATE Numero n SET n.reservado = true, n.fechaReserva = :fechaReserva, n.reservadoA = :usuario WHERE n.id IN :ids")
+    int reservarLote(@Param("ids") List<Long> ids,
+                     @Param("fechaReserva") LocalDateTime fechaReserva,
+                     @Param("usuario") Usuario usuario);
 
+    @Modifying
+    @Transactional
+    @Query("UPDATE Numero n SET n.reservado = false, n.fechaReserva = null, n.reservadoA = null WHERE n.id IN :ids")
+    int liberarLote(@Param("ids") List<Long> ids);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE Numero n SET n.contesta = false WHERE n.id IN :ids")
+    int reiniciarContestaLote(@Param("ids") List<Long> ids);
 }

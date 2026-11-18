@@ -1,16 +1,20 @@
 package com.example.back_numeros.model;
 
-
-import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.util.List;
-
 
 @Entity
-@Table(name = "numeros_telefonicos")
+@Table(
+        name = "numeros_telefonicos",
+        indexes = {
+                @Index(name = "idx_num_terr_edif", columnList = "territorio, edificio"),
+                @Index(name = "idx_num_reservado", columnList = "reservado"),
+                @Index(name = "idx_num_ultima_fecha", columnList = "ultima_fecha"),
+                @Index(name = "idx_num_direccion", columnList = "direccion")
+        }
+)
 @Data
 public class Numero {
     @Id
@@ -24,15 +28,15 @@ public class Numero {
     private String edificio;
     private String numero;
 
-
     @Column(name = "ultima_fecha", nullable = false)
-
     private LocalDateTime ultimaFecha;
 
     private Boolean reservado;
-    @ManyToOne // Muchos números pueden haber sido modificados por un mismo Usuario
-    @JoinColumn(name = "ultUsuario") // El nombre exacto de la columna en MySQL
-    private Usuario ultUsuario; // Reemplazá 'Usuario' por el nombre de tu clase de usuarios
+
+    @ManyToOne
+    @JoinColumn(name = "ultUsuario")
+    private Usuario ultUsuario;
+
     private Boolean tocar;
 
     @ManyToOne
@@ -40,5 +44,4 @@ public class Numero {
     private Usuario reservadoA;
 
     private LocalDateTime fechaReserva;
-
 }
