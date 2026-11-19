@@ -36,4 +36,9 @@ public interface NumeroRepository extends JpaRepository<Numero, Long>, JpaSpecif
     long countByContestaTrue();
 
     long countByReservadoTrue(); // opcional, por si también quieres mostrar cuántos están reservados
+    @Query("SELECT DISTINCT n.territorio FROM Numero n WHERE n.territorio IS NOT NULL AND n.territorio <> '' ORDER BY n.territorio ASC")
+    List<String> findDistinctTerritorios();
+
+    @Query("SELECT DISTINCT n.edificio FROM Numero n WHERE n.edificio IS NOT NULL AND n.edificio <> '' ORDER BY n.edificio ASC")
+    List<String> findDistinctEdificios();
 }

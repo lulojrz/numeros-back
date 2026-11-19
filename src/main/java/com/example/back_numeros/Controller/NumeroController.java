@@ -48,6 +48,16 @@ public class NumeroController {
                 "reservados", reservados
         ));
     }
+    @GetMapping("/numeros/filtros")
+    public ResponseEntity obtenerOpcionesFiltros() {
+        List<String> territorios = numeroRepository.findDistinctTerritorios();
+        List<String> edificios = numeroRepository.findDistinctEdificios();
+
+        return ResponseEntity.ok(Map.of(
+                "territorios", territorios,
+                "edificios", edificios
+        ));
+    }
 
     @GetMapping("/numeros")
     public List<Numero> traerNumeros(
