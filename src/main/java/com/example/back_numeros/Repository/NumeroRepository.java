@@ -32,4 +32,8 @@ public interface NumeroRepository extends JpaRepository<Numero, Long>, JpaSpecif
     @Transactional
     @Query("UPDATE Numero n SET n.contesta = false WHERE n.id IN :ids")
     int reiniciarContestaLote(@Param("ids") List<Long> ids);
+
+    long countByContestaTrue();
+
+    long countByReservadoTrue(); // opcional, por si también quieres mostrar cuántos están reservados
 }

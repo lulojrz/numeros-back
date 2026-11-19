@@ -86,7 +86,8 @@ public class SecurityConfig {
                                 "/api/turnos/crear",
                                 "/api/turnos/obtener",
                                 "/api/turnos/todos",
-                                "/reporte/traer"
+                                "/reporte/traer",
+                                "/api/numeros/estadisticas"
                         ).access(ancSmOrSupport)
                         .anyRequest().authenticated()
                 );

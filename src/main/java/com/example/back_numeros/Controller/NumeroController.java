@@ -6,6 +6,7 @@ import com.example.back_numeros.Repository.UsuarioRepository;
 import com.example.back_numeros.model.Numero;
 import com.example.back_numeros.model.Usuario;
 import jakarta.persistence.criteria.Predicate;
+import org.apache.catalina.connector.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -14,6 +15,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.swing.text.html.parser.Entity;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -30,6 +32,22 @@ public class NumeroController {
 
     @Autowired
     UsuarioRepository usuarioRepository;
+
+
+    @GetMapping("/numeros/estadisticas")
+    public ResponseEntity obtenerEstadisticasNumeros() {
+        long total = numeroRepository.count();
+        long contestados = numeroRepository.countByContestaTrue();
+        long reservados = numeroRepository.countByReservadoTrue();
+        long pendientes = Math.max(0, total - contestados);
+
+        return ResponseEntity.ok(Map.of(
+                "total", total,
+                "contestados", contestados,
+                "pendientes", pendientes,
+                "reservados", reservados
+        ));
+    }
 
     @GetMapping("/numeros")
     public List<Numero> traerNumeros(
@@ -175,4 +193,5 @@ public class NumeroController {
         }
         return numero;
     }
+
 }
