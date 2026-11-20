@@ -41,8 +41,12 @@ public interface NumeroRepository extends JpaRepository<Numero, Long>, JpaSpecif
 
     @Query("SELECT DISTINCT n.edificio FROM Numero n WHERE n.edificio IS NOT NULL AND n.edificio <> '' ORDER BY n.edificio ASC")
     List<String> findDistinctEdificios();
-    // 1. Trae todos los números reservados de un usuario específico (sin límite de 50)
-    List<Numero> findByReservadoTrueAndReservadoA_UsuarioOrderByTerritorioAscEdificioAsc(String usuario);
+    @Query("SELECT n FROM Numero n " +
+            "LEFT JOIN FETCH n.reservadoA r " +
+            "LEFT JOIN FETCH n.ultUsuario " +
+            "WHERE n.reservado = true AND r.usuario = :usuario " +
+            "ORDER BY n.territorio ASC, n.edificio ASC")
+    List<Numero> findMisReservasByUsuario(@Param("usuario") String usuario);
 
     // 2. Resumen agrupado para la tabla de administradores (1 sola consulta SQL rápida)
     @Query("SELECT n.reservadoA.usuario AS usuario, n.territorio AS territorio, MIN(n.fechaReserva) AS fechaAsignacion " +

@@ -204,12 +204,15 @@ public class NumeroController {
         return numero;
     }
 
-    @GetMapping("/numeros/mis-reservas")
-    public List<Numero> traerMisReservas(@RequestParam String usuario) {
-        if (usuario == null || usuario.isBlank()) {
+    @GetMapping({"/numeros/mis-reservas/{usuario}", "/numeros/mis-reservas"})
+    public List<Numero> traerMisReservas(
+            @PathVariable(required = false) String usuario,
+            @RequestParam(name = "usuario", required = false) String usuarioParam) {
+        String user = (usuario != null && !usuario.isBlank()) ? usuario : usuarioParam;
+        if (user == null || user.isBlank()) {
             return List.of();
         }
-        return numeroRepository.findByReservadoTrueAndReservadoA_UsuarioOrderByTerritorioAscEdificioAsc(usuario.trim());
+        return numeroRepository.findMisReservasByUsuario(user.trim());
     }
 
     @GetMapping("/numeros/resumen-reservas")
