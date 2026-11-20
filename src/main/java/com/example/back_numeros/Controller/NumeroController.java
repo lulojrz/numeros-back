@@ -204,4 +204,52 @@ public class NumeroController {
         return numero;
     }
 
+    @GetMapping("/numeros/mis-reservas")
+    public List<Numero> traerMisReservas(@RequestParam String usuario) {
+        if (usuario == null || usuario.isBlank()) {
+            return List.of();
+        }
+        return numeroRepository.findByReservadoTrueAndReservadoA_UsuarioOrderByTerritorioAscEdificioAsc(usuario.trim());
+    }
+
+    @GetMapping("/numeros/resumen-reservas")
+    public List traerResumenReservas() {
+        List<Object[]> rows = numeroRepository.findResumenReservasPorUsuario();
+        Map<String, Map<String, Object>> agrupado = new java.util.LinkedHashMap<>();
+
+        for (Object[] row : rows) {
+            String usuario = (String) row[0];
+            String territorio = row[1] != null ? row[1].toString() : "";
+            LocalDateTime fecha = (LocalDateTime) row[2];
+
+            agrupado.computeIfAbsent(usuario, k -> {
+                Map<String, Object> m = new java.util.HashMap<>();
+                m.put("usuario", usuario);
+                m.put("territoriosSet", new java.util.LinkedHashSet<String>());
+                m.put("fechaMinima", fecha);
+                return m;
+            });
+
+            Map<String, Object> data = agrupado.get(usuario);
+            @SuppressWarnings("unchecked")
+            java.util.Set<String> set = (java.util.Set<String>) data.get("territoriosSet");
+            if (!territorio.isBlank()) set.add(territorio);
+
+            LocalDateTime actualMin = (LocalDateTime) data.get("fechaMinima");
+            if (fecha != null && (actualMin == null || fecha.isBefore(actualMin))) {
+                data.put("fechaMinima", fecha);
+            }
+        }
+
+        return agrupado.values().stream().map(m -> {
+            @SuppressWarnings("unchecked")
+            java.util.Set<String> set = (java.util.Set<String>) m.get("territoriosSet");
+            LocalDateTime min = (LocalDateTime) m.get("fechaMinima");
+            Map<String, Object> res = new java.util.HashMap<>();
+            res.put("usuario", m.get("usuario"));
+            res.put("territorios", String.join(", ", set));
+            res.put("fechaAsignacion", min != null ? min.toString() : null);
+            return res;
+        }).toList();
+    }
 }
