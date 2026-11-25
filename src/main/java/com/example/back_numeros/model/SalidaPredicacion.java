@@ -40,11 +40,11 @@ public class SalidaPredicacion {
     @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "manzanas", "asignaciones"})
     private Territorio territorio;
     @ManyToOne
-    @JoinColumn(name = "territorio_id", nullable = true)
+    @JoinColumn(name = "territorio_2_id", nullable = true)
     @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "manzanas", "asignaciones"})
     private Territorio territorio2;
     @ManyToOne
-    @JoinColumn(name = "territorio_id", nullable = true)
+    @JoinColumn(name = "territorio_3_id", nullable = true)
     @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "manzanas", "asignaciones"})
     private Territorio territorio3;
 }
