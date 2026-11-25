@@ -202,4 +202,9 @@ public class UsuarioController {
     }
 
 
+
+    @GetMapping("/habilitados/publica")
+    public List<Usuario> traerHabilitados(){
+      return usuarioRepository.findByHabilitacionPublicaTrueOrderByApellidoAscNombreAsc();
+    }
 }

@@ -2,12 +2,16 @@ package com.example.back_numeros.Repository;
 
 import com.example.back_numeros.model.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface UsuarioRepository extends JpaRepository<Usuario,Long> {
     Optional<Usuario> findByUsuario(String usuario);
     Optional<Usuario> findById(Long id);
+    List<Usuario> findByHabilitacionPublicaTrueOrderByApellidoAscNombreAsc();
+
 }
