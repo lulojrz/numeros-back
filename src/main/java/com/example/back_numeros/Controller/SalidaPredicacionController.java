@@ -16,8 +16,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import org.springframework.data.domain.Pageable;
@@ -35,6 +37,7 @@ public class SalidaPredicacionController {
 
     @Autowired
     TerritorioRepository territorioRepository;
+
     @Autowired
     UsuarioRepository usuarioRepository;
 
@@ -59,36 +62,25 @@ public class SalidaPredicacionController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Conductor no encontrado."));
         salida.setConductor(conductorReal);
 
-        Territorio territorio = null;
-        if (salida.getTerritorio() != null) {
-            Long territorioId = salida.getTerritorio().getId();
-            if (territorioId == null) {
-                return ResponseEntity.badRequest().body("El ID del territorio es obligatorio.");
-            }
+        LocalDateTime inicio = salida.getFecha().atTime(salida.getHora());
+        LocalDateTime fin = salida.getFecha().atTime(LocalTime.MAX);
+        Set<Long> territoriosProcesados = new HashSet<>();
 
-            Optional<Territorio> territorioEncontrado = territorioRepository.findByIdForUpdate(territorioId);
-            if (territorioEncontrado.isEmpty()) return ResponseEntity.notFound().build();
+        // 2. Validar y asignar territorio 1, 2 y 3 si fueron enviados
+        Territorio t1 = validarYPrepararTerritorio(salida.getTerritorio(), conductorReal, inicio, fin, null, territoriosProcesados, true);
+        Territorio t2 = validarYPrepararTerritorio(salida.getTerritorio2(), conductorReal, inicio, fin, null, territoriosProcesados, true);
+        Territorio t3 = validarYPrepararTerritorio(salida.getTerritorio3(), conductorReal, inicio, fin, null, territoriosProcesados, true);
 
-            territorio = territorioEncontrado.get();
-
-            LocalDateTime inicio = salida.getFecha().atTime(salida.getHora());
-            LocalDateTime fin = salida.getFecha().atTime(LocalTime.MAX);
-            if (tieneConflicto(territorio, territorioId, conductorReal.getId(), inicio, fin, null)) {
-                return conflictoTerritorio();
-            }
-
-            // 2. Actualizar directamente la instancia ya obtenida y guardar la entidad (no el Optional)
-            territorio.setAsignadoA(conductorReal);
-            territorio = territorioRepository.save(territorio);
-            salida.setTerritorio(territorio);
-        }
+        salida.setTerritorio(t1);
+        salida.setTerritorio2(t2);
+        salida.setTerritorio3(t3);
 
         SalidaPredicacion salidaGuardada = salidaRepository.save(salida);
 
-        // 3. Registrar asignación solo si hubo un territorio seleccionado
-        if (territorio != null) {
-            registrarAsignacionTerritorio(salidaGuardada, territorio);
-        }
+        // 3. Registrar asignaciones en historial para cada territorio asignado
+        registrarAsignacionTerritorio(salidaGuardada, t1);
+        registrarAsignacionTerritorio(salidaGuardada, t2);
+        registrarAsignacionTerritorio(salidaGuardada, t3);
 
         return ResponseEntity.ok(salidaGuardada);
     }
@@ -97,45 +89,44 @@ public class SalidaPredicacionController {
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public ResponseEntity<?> editarSalida(@PathVariable Long id, @RequestBody SalidaPredicacion salidaActualizada) {
         if (salidaActualizada == null || salidaActualizada.getFecha() == null ||
-                salidaActualizada.getHora() == null || salidaActualizada.getConductor() == null) {
-            return ResponseEntity.badRequest().build();
+                salidaActualizada.getHora() == null || salidaActualizada.getConductor() == null
+                || salidaActualizada.getConductor().getId() == null) {
+            return ResponseEntity.badRequest().body("Datos de la salida o conductor inválidos.");
         }
 
         Optional<SalidaPredicacion> salidaEncontrada = salidaRepository.findById(id);
         if (salidaEncontrada.isEmpty()) return ResponseEntity.notFound().build();
 
+        Usuario conductorReal = usuarioRepository.findById(salidaActualizada.getConductor().getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Conductor no encontrado."));
+
         SalidaPredicacion salida = salidaEncontrada.get();
-        Optional<AsignacionTerritorio> asignacionAnterior = asignacionRepository.findBySalida_Id(id);
-        Territorio territorio = null;
+        List<AsignacionTerritorio> asignacionesAnteriores = asignacionRepository.findAllBySalida_Id(id);
+        Long asignacionAnteriorId = asignacionesAnteriores.isEmpty() ? null : asignacionesAnteriores.get(0).getId();
 
-        if (salidaActualizada.getTerritorio() != null) {
-            Long territorioId = salidaActualizada.getTerritorio().getId();
-            if (territorioId == null || salidaActualizada.getConductor().getId() == null) {
-                return ResponseEntity.badRequest().body("El territorio y el conductor deben ser válidos.");
-            }
+        LocalDateTime inicio = salidaActualizada.getFecha().atTime(salidaActualizada.getHora());
+        LocalDateTime fin = salidaActualizada.getFecha().atTime(LocalTime.MAX);
+        Set<Long> territoriosProcesados = new HashSet<>();
 
-            Optional<Territorio> territorioEncontrado = territorioRepository.findByIdForUpdate(territorioId);
-            if (territorioEncontrado.isEmpty()) return ResponseEntity.notFound().build();
-            territorio = territorioEncontrado.get();
-
-            LocalDateTime inicio = salidaActualizada.getFecha().atTime(salidaActualizada.getHora());
-            LocalDateTime fin = salidaActualizada.getFecha().atTime(LocalTime.MAX);
-            Long asignacionAnteriorId = asignacionAnterior.map(AsignacionTerritorio::getId).orElse(null);
-            if (tieneConflicto(territorio, territorioId, salidaActualizada.getConductor().getId(), inicio, fin, asignacionAnteriorId)) {
-                return conflictoTerritorio();
-            }
-        }
+        Territorio t1 = validarYPrepararTerritorio(salidaActualizada.getTerritorio(), conductorReal, inicio, fin, asignacionAnteriorId, territoriosProcesados, false);
+        Territorio t2 = validarYPrepararTerritorio(salidaActualizada.getTerritorio2(), conductorReal, inicio, fin, asignacionAnteriorId, territoriosProcesados, false);
+        Territorio t3 = validarYPrepararTerritorio(salidaActualizada.getTerritorio3(), conductorReal, inicio, fin, asignacionAnteriorId, territoriosProcesados, false);
 
         salida.setFecha(salidaActualizada.getFecha());
         salida.setHora(salidaActualizada.getHora());
         salida.setPuntoEncuentro(salidaActualizada.getPuntoEncuentro());
         salida.setGrupos(salidaActualizada.getGrupos());
-        salida.setConductor(salidaActualizada.getConductor());
-        salida.setTerritorio(territorio);
+        salida.setConductor(conductorReal);
+        salida.setTerritorio(t1);
+        salida.setTerritorio2(t2);
+        salida.setTerritorio3(t3);
         SalidaPredicacion salidaGuardada = salidaRepository.save(salida);
 
-        asignacionAnterior.ifPresent(asignacionRepository::delete);
-        registrarAsignacionTerritorio(salidaGuardada, territorio);
+        asignacionRepository.deleteAll(asignacionesAnteriores);
+        registrarAsignacionTerritorio(salidaGuardada, t1);
+        registrarAsignacionTerritorio(salidaGuardada, t2);
+        registrarAsignacionTerritorio(salidaGuardada, t3);
+
         return ResponseEntity.ok(salidaGuardada);
     }
 
@@ -145,12 +136,49 @@ public class SalidaPredicacionController {
         Optional<SalidaPredicacion> salida = salidaRepository.findById(id);
         if (salida.isEmpty()) return ResponseEntity.notFound().build();
 
-        if (salida.get().getTerritorio() != null) {
-            territorioRepository.findByIdForUpdate(salida.get().getTerritorio().getId());
-        }
-        asignacionRepository.findBySalida_Id(id).ifPresent(asignacionRepository::delete);
-        salidaRepository.delete(salida.get());
+        SalidaPredicacion s = salida.get();
+        if (s.getTerritorio() != null) territorioRepository.findByIdForUpdate(s.getTerritorio().getId());
+        if (s.getTerritorio2() != null) territorioRepository.findByIdForUpdate(s.getTerritorio2().getId());
+        if (s.getTerritorio3() != null) territorioRepository.findByIdForUpdate(s.getTerritorio3().getId());
+
+        asignacionRepository.deleteAll(asignacionRepository.findAllBySalida_Id(id));
+        salidaRepository.delete(s);
         return ResponseEntity.ok().build();
+    }
+
+    private Territorio validarYPrepararTerritorio(
+            Territorio territorioRef,
+            Usuario conductorReal,
+            LocalDateTime inicio,
+            LocalDateTime fin,
+            Long asignacionExcluidaId,
+            Set<Long> yaProcesados,
+            boolean actualizarAsignadoA) {
+
+        if (territorioRef == null || territorioRef.getId() == null) {
+            return null;
+        }
+
+        Long territorioId = territorioRef.getId();
+        // Si el usuario seleccionó el mismo territorio en dos desplegables, ignoramos el duplicado
+        if (!yaProcesados.add(territorioId)) {
+            return null;
+        }
+
+        Territorio territorio = territorioRepository.findByIdForUpdate(territorioId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Territorio no encontrado: " + territorioId));
+
+        if (tieneConflicto(territorio, territorioId, conductorReal.getId(), inicio, fin, asignacionExcluidaId)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "El territorio " + territorio.getNumero() + " ya está asignado a otro usuario durante ese período.");
+        }
+
+        if (actualizarAsignadoA) {
+            territorio.setAsignadoA(conductorReal);
+            territorio = territorioRepository.save(territorio);
+        }
+
+        return territorio;
     }
 
     private boolean tieneConflicto(
@@ -175,14 +203,8 @@ public class SalidaPredicacionController {
                 .isEmpty();
     }
 
-    private ResponseEntity<String> conflictoTerritorio() {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body("El territorio ya está asignado a otro usuario durante ese período.");
-    }
-
     private void registrarAsignacionTerritorio(SalidaPredicacion salida, Territorio territorio) {
         if (territorio == null) return;
-
 
         AsignacionTerritorio asignacion = new AsignacionTerritorio();
         asignacion.setTerritorio(territorio);

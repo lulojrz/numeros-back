@@ -44,4 +44,5 @@ public interface AsignacionTerritorioRepository extends JpaRepository<Asignacion
             @Param("usuarioId") Long usuarioId,
             @Param("fechaInicio") LocalDateTime fechaInicio,
             @Param("asignacionExcluidaId") Long asignacionExcluidaId);
+    List<AsignacionTerritorio> findAllBySalida_Id(Long salidaId);
 }
