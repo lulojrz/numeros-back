@@ -137,41 +137,8 @@ public class TerritorioController {
         if (territorioEncontrado.isEmpty()) return ResponseEntity.notFound().build();
 
         Territorio territorio = territorioEncontrado.get();
-        Long asignadoActualId = territorio.getAsignadoA() == null ? null : territorio.getAsignadoA().getId();
-        Long nuevoAsignadoId = territorioActualizado.getAsignadoA() == null ? null : territorioActualizado.getAsignadoA().getId();
-        boolean assignedToNewUser = nuevoAsignadoId != null && !nuevoAsignadoId.equals(asignadoActualId);
-        boolean unassigned = nuevoAsignadoId == null && asignadoActualId != null;
 
-        Optional<AsignacionTerritorio>  asignacionAbierta = Optional.empty();
-        if (unassigned || assignedToNewUser) {
-            asignacionAbierta = asignacionRepo.findFirstByTerritorioIdAndFechaDevolucionIsNullOrderByFechaAsignacionDesc(id);
-        }
 
-        LocalDateTime ahora = LocalDateTime.now();
-        if (assignedToNewUser) {
-            Long asignacionAnteriorId = asignacionAbierta.map(AsignacionTerritorio::getId).orElse(null);
-            long conflictos = asignacionRepo.countConflictingAssignmentsFrom(
-                    id, nuevoAsignadoId, ahora, asignacionAnteriorId);
-            if (conflictos > 0) {
-                return ResponseEntity.status(HttpStatus.CONFLICT)
-                        .body("El territorio está asignado a otro usuario durante ese período.");
-            }
-        }
-
-        if (unassigned || assignedToNewUser) {
-            asignacionAbierta.ifPresent(asignacion -> {
-                asignacion.setFechaDevolucion(ahora);
-                asignacionRepo.save(asignacion);
-            });
-        }
-
-        if (assignedToNewUser) {
-            AsignacionTerritorio nuevaAsignacion = new AsignacionTerritorio();
-            nuevaAsignacion.setTerritorio(territorio);
-            nuevaAsignacion.setUsuario(territorioActualizado.getAsignadoA());
-            nuevaAsignacion.setFechaAsignacion(ahora);
-            asignacionRepo.save(nuevaAsignacion);
-        }
         territorio.setAsignadoA(territorioActualizado.getAsignadoA());
         territorio.setUltimaFechaTrabajada(territorioActualizado.getUltimaFechaTrabajada());
         territorio.setFechasTrabajado(territorioActualizado.getFechasTrabajado());
