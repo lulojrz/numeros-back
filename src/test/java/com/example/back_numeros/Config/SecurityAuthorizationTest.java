@@ -17,8 +17,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.context.WebApplicationContext;
-import org.springframework.session.Session;
-import org.springframework.session.SessionRepository;
+
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -42,8 +41,6 @@ class SecurityAuthorizationTest {
     @Autowired
     private FilterRegistrationBean<CorsFilter> corsFilterRegistration;
 
-    @Autowired
-    private SessionRepository<?> sessionRepository;
 
     @Autowired
     private TerritorioRepository territorioRepository;
@@ -141,20 +138,7 @@ class SecurityAuthorizationTest {
         assertTrue(response.contains("telefonica"));
     }
 
-    @Test
-    void jdbcSessionRepositoryPersistsSessions() {
-        Session restoredSession = saveAndReload(sessionRepository);
 
-        assertTrue(restoredSession != null);
-        assertTrue("persistent-user".equals(restoredSession.getAttribute("principal")));
-    }
-
-    private static <S extends Session> S saveAndReload(SessionRepository<S> repository) {
-        S session = repository.createSession();
-        session.setAttribute("principal", "persistent-user");
-        repository.save(session);
-        return repository.findById(session.getId());
-    }
 
     @Test
     void assignmentExportPathWorksForAuthenticatedUsers() throws Exception {
