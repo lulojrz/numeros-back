@@ -1,38 +1,41 @@
 package com.example.back_numeros.Config;
 
-import com.example.back_numeros.model.Territorio;
-import com.example.back_numeros.model.Usuario;
 import com.example.back_numeros.Repository.TerritorioRepository;
 import com.example.back_numeros.Repository.UsuarioRepository;
+import com.example.back_numeros.model.Territorio;
+import com.example.back_numeros.model.Usuario;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.context.WebApplicationContext;
+import org.springframework.web.filter.CorsFilter;
 
-
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@TestPropertySource(properties = {
+        "jwt.secret=ClaveSecretaDePruebaParaTestsUnitariosColegiales2026ConLongitudSuficiente",
+        "jwt.expiration=3600000"
+})
 class SecurityAuthorizationTest {
 
     @Autowired
@@ -41,12 +44,14 @@ class SecurityAuthorizationTest {
     @Autowired
     private FilterRegistrationBean<CorsFilter> corsFilterRegistration;
 
-
     @Autowired
     private TerritorioRepository territorioRepository;
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     private MockMvc mockMvc;
 
@@ -66,18 +71,18 @@ class SecurityAuthorizationTest {
         MockHttpServletRequest request = new MockHttpServletRequest("OPTIONS", "/usuarios/login");
         request.addHeader("Origin", "https://colegiales.netlify.app");
         request.addHeader("Access-Control-Request-Method", "POST");
-        request.addHeader("Access-Control-Request-Headers", "content-type,x-xsrf-token");
+        request.addHeader("Access-Control-Request-Headers", "content-type,authorization");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         corsFilterRegistration.getFilter().doFilter(request, response, (req, res) -> {
             throw new AssertionError("CORS preflight should end in the CORS filter");
         });
 
-        org.junit.jupiter.api.Assertions.assertEquals(200, response.getStatus());
-        org.junit.jupiter.api.Assertions.assertEquals(
+        assertEquals(200, response.getStatus());
+        assertEquals(
                 "https://colegiales.netlify.app",
                 response.getHeader("Access-Control-Allow-Origin"));
-        org.junit.jupiter.api.Assertions.assertEquals(
+        assertEquals(
                 "true",
                 response.getHeader("Access-Control-Allow-Credentials"));
     }
@@ -116,19 +121,21 @@ class SecurityAuthorizationTest {
     }
 
     @Test
-    void currentUserEndpointValidatesTheSessionAndReturnsOnlyTheCurrentUser() throws Exception {
+    void currentUserEndpointValidatesJwtAndReturnsOnlyTheCurrentUser() throws Exception {
         mockMvc.perform(get("/usuarios/me"))
                 .andExpect(status().isUnauthorized());
 
-        String username = "session-" + java.util.UUID.randomUUID();
+        String username = "jwt-" + java.util.UUID.randomUUID();
         Usuario usuario = new Usuario();
         usuario.setUsuario(username);
         usuario.setPrivilegio("ROLE_PUB");
         usuario.setAsignacion("telefonica");
         usuarioRepository.save(usuario);
 
+        String token = jwtUtil.generarToken(username, "ROLE_PUB");
+
         String response = mockMvc.perform(get("/usuarios/me")
-                        .with(user(username).authorities(() -> "ROLE_PUB")))
+                        .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
@@ -138,8 +145,6 @@ class SecurityAuthorizationTest {
         assertTrue(response.contains("telefonica"));
     }
 
-
-
     @Test
     void assignmentExportPathWorksForAuthenticatedUsers() throws Exception {
         mockMvc.perform(get("/asignaciones")
@@ -148,47 +153,25 @@ class SecurityAuthorizationTest {
     }
 
     @Test
-    void passwordChangeDoesNotRequireLoginButStillRequiresCsrf() throws Exception {
+    void passwordChangeRejectsInvalidCredentials() throws Exception {
         mockMvc.perform(put("/usuarios/cambiar-contrasena")
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"usuario\":\"missing\",\"contrasenaActual\":\"old\",\"nuevaContrasena\":\"new\"}"))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void logoutRequiresCsrfAndInvalidatesSession() throws Exception {
-        MockHttpSession session = new MockHttpSession();
-        session.setAttribute("session-marker", "present");
-
-        mockMvc.perform(post("/usuarios/logout")
-                        .session(session)
-                        .with(user("regular").authorities(() -> "ROLE_USER")))
-                .andExpect(status().isForbidden());
-
-        mockMvc.perform(post("/usuarios/logout")
-                        .session(session)
-                        .with(user("regular").authorities(() -> "ROLE_USER"))
-                        .with(csrf()))
-                .andExpect(status().isNoContent());
-
-        org.junit.jupiter.api.Assertions.assertTrue(session.isInvalid());
-    }
-
-    @Test
     void userWithoutAncCannotCreateUsersOrDeleteRecords() throws Exception {
-        var user = user("regular").authorities(() -> "ROLE_USER");
+        var regularUser = user("regular").authorities(() -> "ROLE_USER");
 
         mockMvc.perform(post("/usuarios/crear")
-                        .with(user)
-                        .with(csrf())
+                        .with(regularUser)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"usuario\":\"test\"}"))
                 .andExpect(status().isForbidden());
 
         mockMvc.perform(delete("/territorios/borrar/999999")
-                        .with(user)
-                        .with(csrf()))
+                        .with(regularUser))
                 .andExpect(status().isForbidden());
     }
 
@@ -202,13 +185,6 @@ class SecurityAuthorizationTest {
 
         mockMvc.perform(post("/usuarios/crear")
                         .with(user(adminUsername).authorities(() -> "ROLE_ANC"))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"usuario\":\"csrf-check\"}"))
-                .andExpect(status().isForbidden());
-
-        mockMvc.perform(post("/usuarios/crear")
-                        .with(user(adminUsername).authorities(() -> "ROLE_ANC"))
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"usuario\":\"admin-created\",\"contrasena\":\"test-password\",\"privilegio\":\"ROLE_USER\"}"))
                 .andExpect(status().isOk());
@@ -225,7 +201,6 @@ class SecurityAuthorizationTest {
 
         mockMvc.perform(post("/usuarios/crear")
                         .with(user(supportUsername).authorities(() -> "ROLE_PUB"))
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"usuario\":\"support-created\",\"contrasena\":\"test-password\",\"privilegio\":\"ROLE_USER\"}"))
                 .andExpect(status().isOk());
@@ -235,7 +210,6 @@ class SecurityAuthorizationTest {
 
         mockMvc.perform(post("/usuarios/crear")
                         .with(user(supportUsername).authorities(() -> "ROLE_PUB"))
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"usuario\":\"support-revoked\",\"contrasena\":\"test-password\",\"privilegio\":\"ROLE_USER\"}"))
                 .andExpect(status().isForbidden());
@@ -257,21 +231,19 @@ class SecurityAuthorizationTest {
 
         mockMvc.perform(put("/usuarios/editar/" + target.getId())
                         .with(user(adminUsername).authorities(() -> "ROLE_ANC"))
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nombre\":\"Nombre actualizado\",\"apellido\":\"Apellido actualizado\",\"usuario\":\"cuenta-actualizada\",\"telefono\":\"5551234\",\"privilegio\":\"ROLE_PUB\",\"asignacion\":\"\",\"grupo\":\"Grupo 4\",\"carrito\":true,\"banner\":false,\"habilitacionPublica\":false,\"conductor\":false}"))
                 .andExpect(status().isOk());
 
         Usuario updated = usuarioRepository.findById(target.getId()).orElseThrow();
-        org.junit.jupiter.api.Assertions.assertEquals("Nombre actualizado", updated.getNombre());
-        org.junit.jupiter.api.Assertions.assertEquals("Apellido actualizado", updated.getApellido());
-        org.junit.jupiter.api.Assertions.assertEquals("cuenta-actualizada", updated.getUsuario());
-        org.junit.jupiter.api.Assertions.assertEquals("Grupo 4", updated.getGrupo());
-        org.junit.jupiter.api.Assertions.assertTrue(updated.getCarrito());
+        assertEquals("Nombre actualizado", updated.getNombre());
+        assertEquals("Apellido actualizado", updated.getApellido());
+        assertEquals("cuenta-actualizada", updated.getUsuario());
+        assertEquals("Grupo 4", updated.getGrupo());
+        assertTrue(updated.getCarrito());
 
         mockMvc.perform(put("/usuarios/editar/" + target.getId())
                         .with(user(adminUsername).authorities(() -> "ROLE_ANC"))
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"usuario\":\"" + adminUsername + "\",\"privilegio\":\"ROLE_PUB\"}"))
                 .andExpect(status().isConflict());

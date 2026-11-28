@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class LoginAttemptService {
 
-    private static final int MAX_ATTEMPTS = 5;
+    private static final int MAX_ATTEMPTS = 8;
     private static final long BLOCK_DURATION_MILLIS = 15 * 60 * 1000L; // 15 minutos
 
     private record AttemptRecord(int count, long lastAttemptTime) {}
