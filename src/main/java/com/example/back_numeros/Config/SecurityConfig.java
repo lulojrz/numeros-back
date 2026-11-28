@@ -4,33 +4,33 @@ import com.example.back_numeros.Repository.UsuarioRepository;
 import com.example.back_numeros.model.Usuario;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpMethod;
 import org.springframework.core.Ordered;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
-import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 
-import java.util.List;
-import java.util.Arrays;
-import java.util.Locale;
 import java.text.Normalizer;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -40,39 +40,31 @@ public class SecurityConfig {
 
     private static final String PRODUCTION_ORIGIN = "https://colegiales.netlify.app";
 
-    // En Railway, CORS_ORIGINS puede contener orígenes adicionales separados por comas.
-    // En local configurar: CORS_ORIGINS=http://localhost:5173
-
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, UsuarioRepository usuarioRepository) throws Exception {
-        CookieCsrfTokenRepository csrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
-        csrfTokenRepository.setCookiePath("/");
-        csrfTokenRepository.setCookieCustomizer(cookie -> cookie.sameSite("None").secure(true));
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            UsuarioRepository usuarioRepository,
+            JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+
         AuthorizationManager<RequestAuthorizationContext> ancOrSupport =
                 usuarioAccess(usuarioRepository, Set.of("ROLE_ANC"));
         AuthorizationManager<RequestAuthorizationContext> ancSmOrSupport =
                 usuarioAccess(usuarioRepository, Set.of("ROLE_ANC", "ROLE_SM"));
 
         http
-                .csrf(csrf -> csrf
-                        .csrfTokenRepository(csrfTokenRepository)
-                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
+                .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session
-                        .sessionFixation(sessionFixation -> sessionFixation.newSession())
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .logout(logout -> logout
                         .logoutUrl("/usuarios/logout")
-                        .invalidateHttpSession(true)
-                        .clearAuthentication(true)
-                        .deleteCookies("JSESSIONID", "XSRF-TOKEN")
                         .logoutSuccessHandler((request, response, authentication) ->
                                 response.setStatus(HttpServletResponse.SC_NO_CONTENT)))
-
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/csrf", "/territorios/traer").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/territorios/traer").permitAll()
                         .requestMatchers(HttpMethod.POST, "/usuarios/login").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/usuarios/cambiar-contrasena").permitAll()
                         .requestMatchers(HttpMethod.POST, "/usuarios/crear").access(ancOrSupport)
@@ -92,7 +84,8 @@ public class SecurityConfig {
                                 "/usuarios/habilitados/publica"
                         ).access(ancSmOrSupport)
                         .anyRequest().authenticated()
-                );
+                )
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -151,6 +144,7 @@ public class SecurityConfig {
                 .toList());
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"));
         configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

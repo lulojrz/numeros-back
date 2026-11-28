@@ -1,40 +1,41 @@
 package com.example.back_numeros.Controller;
 
-
-import com.example.back_numeros.Repository.UsuarioRepository;
+import com.example.back_numeros.Config.JwtUtil;
 import com.example.back_numeros.Config.LoginAttemptService;
 import com.example.back_numeros.Config.PaginationRequest;
+import com.example.back_numeros.Repository.UsuarioRepository;
 import com.example.back_numeros.model.Usuario;
+import com.example.back_numeros.model.cambiarContrasenaDTO;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.web.bind.annotation.*;
-import com.example.back_numeros.model.cambiarContrasenaDTO;
 
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import org.springframework.data.domain.Pageable;
 
 @RestController
 @RequestMapping("usuarios")
-
 public class UsuarioController {
+
     @Autowired
     UsuarioRepository usuarioRepository;
+
     @Autowired
     PasswordEncoder passwordEncoder;
+
     @Autowired
     LoginAttemptService loginAttemptService;
+
+    @Autowired
+    JwtUtil jwtUtil;
 
     @GetMapping()
     public List<Usuario> traerUsuarios(
@@ -57,8 +58,7 @@ public class UsuarioController {
     @PutMapping("editar/{id}")
     public ResponseEntity<?> editarUsuario(
             @RequestBody Usuario usuario_a_editar,
-            @PathVariable Long id,
-            HttpServletRequest request) {
+            @PathVariable Long id) {
         if (usuario_a_editar == null) {
             return ResponseEntity.badRequest().body("Datos de usuario inválidos");
         }
@@ -92,20 +92,9 @@ public class UsuarioController {
             Authentication autenticacion = SecurityContextHolder.getContext().getAuthentication();
             if (autenticacion != null && autenticacion.getName().equals(usuarioAnterior)
                     && !usuarioAnterior.equals(usuarioGuardado.getUsuario())) {
-                SecurityContext contexto = SecurityContextHolder.createEmptyContext();
-                Authentication autenticacionActualizada = new UsernamePasswordAuthenticationToken(
-                        usuarioGuardado.getUsuario(),
-                        null,
-                        Collections.singletonList(new SimpleGrantedAuthority(usuarioGuardado.getPrivilegio()))
-                );
-                contexto.setAuthentication(autenticacionActualizada);
-                SecurityContextHolder.setContext(contexto);
-                HttpSession session = request.getSession(false);
-                if (session != null) {
-                    session.setAttribute(
-                            HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
-                            contexto);
-                }
+                String nuevoToken = jwtUtil.generarToken(usuarioGuardado.getUsuario(), usuarioGuardado.getPrivilegio());
+                Map<String, Object> respuesta = construirRespuestaUsuario(usuarioGuardado, nuevoToken);
+                return ResponseEntity.ok(respuesta);
             }
 
             return ResponseEntity.ok(usuarioGuardado);
@@ -113,13 +102,11 @@ public class UsuarioController {
     }
 
     @PostMapping("/crear")
-    public Usuario crearUsuario(@RequestBody Usuario usuario_nuevo){
+    public Usuario crearUsuario(@RequestBody Usuario usuario_nuevo) {
         String passwordplana = usuario_nuevo.getContrasena();
-
         String passwordHasheada = passwordEncoder.encode(passwordplana);
         usuario_nuevo.setContrasena(passwordHasheada);
         return usuarioRepository.save(usuario_nuevo);
-
     }
 
     @PostMapping("/login")
@@ -140,18 +127,10 @@ public class UsuarioController {
             Usuario user = encontrado.get();
             loginAttemptService.clear(address);
 
-            SimpleGrantedAuthority authority = new SimpleGrantedAuthority(user.getPrivilegio());
-            Authentication authentication = new UsernamePasswordAuthenticationToken(
-                    user.getUsuario(),
-                    null,
-                    Collections.singletonList(authority)
-            );
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            HttpSession session = request.getSession(true);
-            request.changeSessionId();
-            session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, SecurityContextHolder.getContext());
+            String token = jwtUtil.generarToken(user.getUsuario(), user.getPrivilegio());
+            Map<String, Object> respuesta = construirRespuestaUsuario(user, token);
 
-            return ResponseEntity.ok(user);
+            return ResponseEntity.ok(respuesta);
         } else {
             loginAttemptService.recordFailure(address);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciales inválidas");
@@ -201,10 +180,26 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioEliminado.get());
     }
 
-
-
     @GetMapping("/habilitados/publica")
-    public List<Usuario> traerHabilitados(){
-      return usuarioRepository.findByHabilitacionPublicaTrueOrderByApellidoAscNombreAsc();
+    public List<Usuario> traerHabilitados() {
+        return usuarioRepository.findByHabilitacionPublicaTrueOrderByApellidoAscNombreAsc();
+    }
+
+    private Map<String, Object> construirRespuestaUsuario(Usuario user, String token) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("token", token);
+        map.put("id", user.getId());
+        map.put("usuario", user.getUsuario());
+        map.put("nombre", user.getNombre());
+        map.put("apellido", user.getApellido());
+        map.put("privilegio", user.getPrivilegio());
+        map.put("banner", user.getBanner());
+        map.put("asignacion", user.getAsignacion());
+        map.put("carrito", user.getCarrito());
+        map.put("telefono", user.getTelefono());
+        map.put("habilitacionPublica", user.getHabilitacionPublica());
+        map.put("grupo", user.getGrupo());
+        map.put("conductor", user.getConductor());
+        return map;
     }
 }
